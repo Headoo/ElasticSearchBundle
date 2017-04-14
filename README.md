@@ -2,7 +2,8 @@ ElasticSearchBundle
 =========
 
 [![Build Status](https://travis-ci.org/Headoo/ElasticSearchBundle.svg?branch=master)](https://travis-ci.org/Headoo/ElasticSearchBundle)
-
+[![Code Climate](https://codeclimate.com/github/Headoo/ElasticSearchBundle/badges/gpa.svg)](https://codeclimate.com/github/Headoo/ElasticSearchBundle)
+[![Latest Stable Version](https://poser.pugx.org/headoo/elasticsearch-bundle/v/stable)](https://packagist.org/packages/headoo/elasticsearch-bundle)
 
 ElasticSearchBundle is a Symfony2/3 Bundle designed for simply use ElasticSearch 5.x with Doctrine 2.x
 
