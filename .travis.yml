@@ -1,0 +1,34 @@
+dist: trusty
+sudo: required
+
+language: php
+
+php:
+  - 7.1
+  - 7.0
+
+env:
+  - SYMFONY_VERSION=2.8.*
+  - SYMFONY_VERSION=3.2.*
+
+before_script:
+  - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.2.1.deb
+  - sudo dpkg -i --force-confnew elasticsearch-5.2.1.deb
+  - sudo /usr/share/elasticsearch/bin/elasticsearch-plugin install -b mapper-attachments
+  - sudo service elasticsearch restart
+  - sleep 15
+  - travis_retry composer self-update
+
+services:
+  - elasticsearch
+
+install:
+  - composer require symfony/framework-bundle:${SYMFONY_VERSION}
+
+script:
+  - mkdir -p build/logs
+  - phpunit --coverage-text --coverage-clover=coverage.clover
+  - phpunit --coverage-clover build/logs/clover.xml
+
+after_success:
+  - vendor/bin/test-reporter

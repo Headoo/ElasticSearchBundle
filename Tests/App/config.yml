@@ -1,0 +1,35 @@
+framework:
+    secret:          secret
+
+
+imports:
+    - { resource: elastic.php }
+
+
+headoo_elastic_search:
+    connections: %elastica_connections%
+    mappings: %elastica_mappings%
+
+
+doctrine:
+    dbal:
+        default_connection: default
+        connections:
+            default:
+                driver:   pdo_sqlite
+                memory:   true
+                dbname:   'test'
+    orm:
+        entity_managers:
+            default:
+                connection:       default
+                mappings:
+                    custom_mapping:
+                        type: annotation
+                        prefix: Headoo\ElasticSearchBundle\Tests\Entity\FakeEntity
+                        dir: "%kernel.root_dir%/../Entity/"
+                        is_bundle: false
+
+services:
+    elastic.fakeentity.transformer:
+        class: Headoo\ElasticSearchBundle\Tests\Transformer\FakeEntityTransformer

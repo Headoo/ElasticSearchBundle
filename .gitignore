@@ -1,0 +1,10 @@
+
+vendor/
+
+coverage\.clover
+
+composer\.phar
+
+composer\.lock
+
+\.idea/
