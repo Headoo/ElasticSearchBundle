@@ -36,7 +36,7 @@ Configuration
 -------------
 
 Configure your connections and mappings in `config.yml` :
-And we will linked this to a PHP config. You can use what you want. I prefer this way instead yml, it's more in a ElasticSearch way.
+And we will linked this to a PHP config. You can use what you want. I prefer this instead yml, it's more in a ElasticSearch way.
 
 
 ``` yaml
@@ -289,7 +289,7 @@ class ElasticSearchListener
 ``` 
 
 ## Command for populate
-After configuration of your entities, you maybe want make them available on ElasticSearch. You have to use `php app/console headoo:elastica:populate`. Differents options are available :
+After configuration of your entities, you maybe want make them available on ElasticSearch. You have to use `php app/console headoo:elastic:populate`. Differents options are available :
 
 * --limit=int : Limit of your collection
 * --offset=int : Offset of your collection 

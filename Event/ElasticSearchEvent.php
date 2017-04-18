@@ -18,7 +18,7 @@ class ElasticSearchEvent extends Event
 
     public function getAction()
     {
-        return $this->entity;
+        return $this->action;
     }
 
 
