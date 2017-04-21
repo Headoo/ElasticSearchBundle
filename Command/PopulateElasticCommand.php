@@ -93,7 +93,7 @@ class PopulateElasticCommand extends ContainerAwareCommand
     {
         $this->threads                              = $input->getOption('threads') ?: 2;
         $this->limit                                = $input->getOption('limit') ?: null;
-        $this->offset                               = $input->getOption('offset') ?: null;
+        $this->offset                               = $input->getOption('offset') ?: 0;
         $this->type                                 = $input->getOption('type');
         $this->batch                                = $input->getOption('batch');
         $this->reset                                = $input->getOption('reset');
@@ -218,11 +218,10 @@ class PopulateElasticCommand extends ContainerAwareCommand
      * @param $type
      */
     public function beginBatch($type){
-        $collection = $this->em->getRepository($this->mappings[$type]['class'])->findBy([],null,null,$this->offset);
-        $numberObjects = count($collection);
+        $numberObjects = $this->em->createQuery("SELECT COUNT(u) FROM {$this->mappings[$type]['class']} u")->getResult()[0][1];
         $aProcess = [];
-        $total    = floor($numberObjects / $this->limit);
-        $progressBar = new ProgressBar($this->output,$numberObjects);
+        $total    =  floor(($numberObjects - $this->offset) / $this->limit);
+        $progressBar = new ProgressBar($this->output,$numberObjects - $this->offset);
 
         for ($i = 0; $i <= $total; $i++) {
             $_offset = $this->offset + ($this->limit * $i);
@@ -254,17 +253,33 @@ class PopulateElasticCommand extends ContainerAwareCommand
         $this->output->writeln("********************** Finish Type {$type} and Mapping ***********************");
         $this->output->writeln("********************** Start populate {$type} ***********************");
 
-        $collection = $this->em->getRepository($this->mappings[$type]['class'])->findBy([],null,$this->limit,$this->offset);
 
-        $progress = new ProgressBar($this->output, count($collection));
+        $iResults = $this->em->createQuery("SELECT COUNT(u) FROM {$this->mappings[$type]['class']} u")->getResult()[0][1];
+
+        $q = $this->em->createQuery("select u from {$this->mappings[$type]['class']} u");
+
+        if($this->offset){
+            $q->setFirstResult($this->offset);
+            $iResults = $iResults - $this->offset;
+        }
+
+        if($this->limit){
+            $q->setMaxResults($this->limit);
+            $iResults = $this->limit;
+
+        }
+
+        $iterableResult = $q->iterate();
+
+        $progress = new ProgressBar($this->output, $iResults);
         $progress->start();
 
         $aDocuments = [];
 
-        foreach ($collection as $object){
-            $document = $transformer->transform($object);
+        foreach ($iterableResult as $row){
+            $document = $transformer->transform($row[0]);
             $aDocuments[]= $document;
-
+            $this->em->detach($row[0]);
             $progress->advance();
         }
 
