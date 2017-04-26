@@ -6,7 +6,7 @@ use Doctrine\Common\EventSubscriber;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Headoo\ElasticSearchBundle\Event\ElasticSearchEvent;
 use Headoo\ElasticSearchBundle\Handler\ElasticSearchHandler;
-use Symfony\Component\EventDispatcher\ContainerAwareEventDispatcher;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 
 
 class ElasticSearchListener implements EventSubscriber
@@ -14,7 +14,7 @@ class ElasticSearchListener implements EventSubscriber
     /** @var array  */
     protected $aTypes;
 
-    /** @var ContainerAwareEventDispatcher  */
+    /** @var EventDispatcher  */
     protected $eventDispatcher;
 
     /** @var ElasticSearchHandler  */
@@ -25,9 +25,9 @@ class ElasticSearchListener implements EventSubscriber
 
 
     /**
-     * @param ContainerAwareEventDispatcher $eventDispatcher
+     * @param $eventDispatcher
      */
-    public function setEventDispatcher(ContainerAwareEventDispatcher $eventDispatcher)
+    public function setEventDispatcher($eventDispatcher)
     {
         $this->eventDispatcher = $eventDispatcher;
     }
