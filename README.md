@@ -290,7 +290,7 @@ class ElasticSearchListener
 ``` 
 
 ## Command for populate
-######CAREFULL: You have to set --reset flag on command FIRST TIME you populate a type or all types.
+###### CAREFULL: You have to set --reset flag on command FIRST TIME you populate a type or all types.
 After configuration of your entities, you maybe want make them available on ElasticSearch. You have to use `php app/console headoo:elastic:populate`. Differents options are available :
 
 * --limit=int : Limit of your collection
