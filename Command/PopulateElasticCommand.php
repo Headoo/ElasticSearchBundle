@@ -168,8 +168,10 @@ class PopulateElasticCommand extends ContainerAwareCommand
      * @param $aDocuments
      */
     private function _bulk($type, $aDocuments){
-        $type->addDocuments($aDocuments);
-        $type->getIndex()->refresh();
+        if(count($aDocuments)){
+            $type->addDocuments($aDocuments);
+            $type->getIndex()->refresh();
+        }
     }
 
     /**
