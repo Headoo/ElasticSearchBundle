@@ -280,6 +280,11 @@ class PopulateElasticCommand extends ContainerAwareCommand
 
         foreach ($iterableResult as $row){
             $document = $transformer->transform($row[0]);
+
+            if (!$document) {
+                continue;
+            }
+
             $aDocuments[]= $document;
             $this->em->detach($row[0]);
             $progress->advance();
