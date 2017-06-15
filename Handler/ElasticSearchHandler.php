@@ -51,6 +51,10 @@ class ElasticSearchHandler
      * @param $indexName
      */
     public function removeToElastic($entity, $connectionName,$indexName){
+        if (empty($entity->getId())) {
+            return;
+        }
+
         $a          = explode("\\",get_class($entity));
         $type       = end($a);
         $index      = $this->elasticSearchHelper->getClient($connectionName)->getIndex($indexName);
