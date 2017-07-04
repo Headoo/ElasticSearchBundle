@@ -9,11 +9,13 @@ use Doctrine\Common\DataFixtures\Purger\ORMPurger;
 use Doctrine\ORM\EntityManager;
 use Elastica\Query;
 use Elastica\Search;
+use Headoo\ElasticSearchBundle\Event\ElasticSearchEvent;
 use Headoo\ElasticSearchBundle\Tests\DataFixtures\LoadData;
 use Headoo\ElasticSearchBundle\Tests\Entity\FakeEntity;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 class ElasticSearchEventListenerTest extends KernelTestCase
 {
@@ -29,6 +31,11 @@ class ElasticSearchEventListenerTest extends KernelTestCase
     private $_em;
 
     /**
+     * @var EventDispatcherInterface
+     */
+    private $_eventDispatcher;
+
+    /**
      * @var Application
      */
     protected $application;
@@ -42,6 +49,7 @@ class ElasticSearchEventListenerTest extends KernelTestCase
 
         $this->_em                      = static::$kernel->getContainer()->get('doctrine')->getManager();
         $this->_elasticSearchHelper     = static::$kernel->getContainer()->get('headoo.elasticsearch.helper');
+        $this->_eventDispatcher         = static::$kernel->getContainer()->get('event_dispatcher');
 
         $this->application = new Application(self::$kernel);
         $this->application->setAutoExit(false);
@@ -54,7 +62,6 @@ class ElasticSearchEventListenerTest extends KernelTestCase
         $fake->setName('Event Listener Test');
         $this->_em->persist($fake);
         $this->_em->flush();
-
 
         $search     = new Search($this->_elasticSearchHelper->getClient('localhost'));
         $search->addIndex('test');
@@ -71,6 +78,25 @@ class ElasticSearchEventListenerTest extends KernelTestCase
         $this->assertEquals('Event Listener Test' , $resultSet->getResults()[0]->getSource()["name"]);
     }
 
+    public function testEventRemove()
+    {
+        $fake = new FakeEntity();
+        $fake->setName('Event Listener Test');
+        $this->_em->persist($fake);
+        $this->_em->flush();
+
+        $event = new ElasticSearchEvent('remove', $fake);
+        $this->_eventDispatcher->dispatch("headoo.elasticsearch.event", $event);
+    }
+
+    public function testEventRemoveNoId()
+    {
+        $fake = new FakeEntity();
+        $fake->setName('Event Listener Test');
+
+        $event = new ElasticSearchEvent('remove', $fake);
+        $this->_eventDispatcher->dispatch("headoo.elasticsearch.event", $event);
+    }
 
     public function loadFixtures(array $options = [])
     {
@@ -87,6 +113,5 @@ class ElasticSearchEventListenerTest extends KernelTestCase
         $executor = new ORMExecutor($this->_em, $purger);
         $executor->execute($loader->getFixtures());
     }
-
 
 }

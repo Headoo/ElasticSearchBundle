@@ -46,7 +46,6 @@ class PopulateElasticCommandTest extends KernelTestCase
         $this->application->setAutoExit(false);
 
         $this->loadFixtures();
-
     }
 
     public function testCommand1()
@@ -91,7 +90,8 @@ class PopulateElasticCommandTest extends KernelTestCase
         $this->assertEquals(90, count($resultSet->getResults()));
     }
 
-    public function testCommand4(){
+    public function testCommand4()
+    {
         $options4['command'] = 'headoo:elastic:populate';
         $options4['--reset'] = true;
         $options4['--type'] = 'FakeEntity';
@@ -104,6 +104,20 @@ class PopulateElasticCommandTest extends KernelTestCase
         $this->assertEquals(100 , count($resultSet->getResults()));
     }
 
+    public function testCommandRunParallel()
+    {
+        $optionsRunParallel['command'] = 'headoo:elastic:populate';
+        $optionsRunParallel['--reset'] = true;
+        $optionsRunParallel['--type'] = 'FakeEntity';
+        $optionsRunParallel['--batch'] = '4';
+        $this->application->run(new ArrayInput($optionsRunParallel));
+        $search     = new Search($this->_elasticSearchHelper->getClient('localhost'));
+        $search->addIndex('test');
+        $query      = new Query();
+        $query->setSize(1000);
+        $resultSet = $search->search($query);
+        $this->assertEquals(100 , count($resultSet->getResults()));
+    }
 
     public function loadFixtures(array $options = [])
     {
@@ -112,7 +126,6 @@ class PopulateElasticCommandTest extends KernelTestCase
 
         $options['command'] = 'doctrine:schema:create';
         $this->application->run(new ArrayInput($options));
-
 
         $loader = new Loader();
         $loader->addFixture(new LoadData());

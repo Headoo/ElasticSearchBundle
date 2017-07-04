@@ -38,9 +38,7 @@ class ElasticSearchHelper
     public function getCluster(array $servers)
     {
         $cluster = new Client([
-            'servers' => [
-                $servers
-            ]
+            'servers' => [$servers]
         ]);
 
         return $cluster;

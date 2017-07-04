@@ -47,33 +47,28 @@ class PopulateElasticCommand extends ContainerAwareCommand
                 InputOption::VALUE_OPTIONAL,
                 'Limit For selected Type',
                 0
-            )
-            ->addOption(
+            )->addOption(
                 'offset',
                 null,
                 InputOption::VALUE_OPTIONAL,
                 'Offset For selected Type',
                 0
-            )
-            ->addOption(
+            )->addOption(
                 'type',
                 null,
                 InputOption::VALUE_OPTIONAL,
                 'Type of document you want to populate. You must to have configure it before use',
                 null
-            )
-            ->addOption(
+            )->addOption(
                 'threads',
                 null,
                 InputOption::VALUE_OPTIONAL,
                 'number of simultaneous threads',
                 null
-            )
-            ->addOption(
+            )->addOption(
                 'reset',
-                null)
-
-            ->addOption(
+                null
+            )->addOption(
                 'batch',
                 null,
                 InputOption::VALUE_OPTIONAL,
@@ -112,10 +107,11 @@ class PopulateElasticCommand extends ContainerAwareCommand
 
         if($input->getOption('type')){
             $this->_switchType($this->type, $this->batch);
-        }else{
-            foreach ($this->aTypes as $type){
-                $this->_switchType($type, $this->batch);
-            }
+            return 0;
+        }
+
+        foreach ($this->aTypes as $type){
+            $this->_switchType($type, $this->batch);
         }
 
         return 0;
@@ -142,10 +138,10 @@ class PopulateElasticCommand extends ContainerAwareCommand
                 $this->beginBatch($type);
             }
             $this->output->writeln("********************** FINISH {$type} ***********************");
-
-        }else{
-            $this->output->writeln("********************** Wrong Type ***********************");
+            return;
         }
+
+        $this->output->writeln("********************** Wrong Type ***********************");
     }
 
     /**
@@ -194,6 +190,7 @@ class PopulateElasticCommand extends ContainerAwareCommand
         foreach ($currentProcesses as $process) {
             $process->start();
         }
+
         do {
             // wait for the given time
             usleep($poll);
@@ -214,7 +211,6 @@ class PopulateElasticCommand extends ContainerAwareCommand
 
             // continue loop while there are processes being executed or waiting for execution
         } while (count($processesQueue) > 0 || count($currentProcesses) > 0);
-
     }
 
     /**
