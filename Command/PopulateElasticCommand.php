@@ -11,7 +11,6 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
 
-
 class PopulateElasticCommand extends ContainerAwareCommand
 {
     /** @var  OutputInterface */
@@ -101,6 +100,7 @@ class PopulateElasticCommand extends ContainerAwareCommand
         $this->elasticaHelper                       = $this->getContainer()->get('headoo.elasticsearch.helper');
         $this->mappings                             = $this->getContainer()->getParameter('elastica_mappings');
         $this->em                                   = $this->getContainer()->get('doctrine.orm.entity_manager');
+
         foreach ($this->mappings as $key=>$mapping){
             $this->aTypes[] = $key;
         }
@@ -110,7 +110,6 @@ class PopulateElasticCommand extends ContainerAwareCommand
             $this->limit = $this->batch ;
         }
 
-
         if($input->getOption('type')){
             $this->_switchType($this->type, $this->batch);
         }else{
@@ -118,13 +117,16 @@ class PopulateElasticCommand extends ContainerAwareCommand
                 $this->_switchType($type, $this->batch);
             }
         }
+
+        return 0;
     }
 
     /**
      * @param $type
      * @param $batch
      */
-    private function _switchType($type, $batch){
+    private function _switchType($type, $batch)
+    {
         if(in_array($type, $this->aTypes)){
             $this->output->writeln("********************** BEGIN {$type} ************************");
             if($this->reset){
@@ -146,12 +148,12 @@ class PopulateElasticCommand extends ContainerAwareCommand
         }
     }
 
-
     /**
      * @param $type
      * @param $properties
      */
-    private function _mappingFields($type, $properties){
+    private function _mappingFields($type, $properties)
+    {
         // Define mapping
         $mapping = new \Elastica\Type\Mapping();
         $mapping->setType($type);
@@ -161,13 +163,12 @@ class PopulateElasticCommand extends ContainerAwareCommand
         $mapping->send();
     }
 
-
-
     /**
-     * @param $type
+     * @param \Elastica\Type $type
      * @param $aDocuments
      */
-    private function _bulk($type, $aDocuments){
+    private function _bulk($type, $aDocuments)
+    {
         if(count($aDocuments)){
             $type->addDocuments($aDocuments);
             $type->getIndex()->refresh();
@@ -219,7 +220,8 @@ class PopulateElasticCommand extends ContainerAwareCommand
     /**
      * @param $type
      */
-    public function beginBatch($type){
+    public function beginBatch($type)
+    {
         $numberObjects = $this->em->createQuery("SELECT COUNT(u) FROM {$this->mappings[$type]['class']} u")->getResult()[0][1];
         $aProcess = [];
         $total    =  floor(($numberObjects - $this->offset) / $this->limit);
@@ -238,12 +240,12 @@ class PopulateElasticCommand extends ContainerAwareCommand
         return;
     }
 
-
     /**
      * @param $type
      * @param $transformer
      */
-    public function processBatch($type, $transformer){
+    public function processBatch($type, $transformer)
+    {
         $this->output->writeln("********************** Creating Type {$type} and Mapping ***********************");
         $index_name         = $this->getContainer()->get('headoo.elasticsearch.handler')->getIndexName($type);
         $connection         = $this->mappings[$type]['connection'];
@@ -296,7 +298,6 @@ class PopulateElasticCommand extends ContainerAwareCommand
         $progress->finish();
         $this->output->writeln('');
         $this->output->writeln("<info>********************** Finish populate {$type} ***********************</info>");
-
     }
 
 }

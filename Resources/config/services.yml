@@ -13,7 +13,6 @@ services:
             tags:
                 - { name: doctrine.event_subscriber }
 
-
   headoo.elasticsearch.handler:
               class: Headoo\ElasticSearchBundle\Handler\ElasticSearchHandler
               calls:
