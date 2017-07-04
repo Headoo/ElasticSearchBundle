@@ -75,10 +75,10 @@ class ElasticSearchHandlerTest extends KernelTestCase
 
     }
 
-    public function testRemoveToElastic()
+    public function testRemoveFromElastic()
     {
         $fake = $this->_em->getRepository('\Headoo\ElasticSearchBundle\Tests\Entity\FakeEntity')->find(1);
-        $this->_elasticSearchHandler->removeToElastic($fake, 'localhost', 'test');
+        $this->_elasticSearchHandler->removeFromElastic($fake, 'localhost', 'test');
 
         $search     = new Search($this->_elasticSearchHelper->getClient('localhost'));
         $search->addIndex('test');
