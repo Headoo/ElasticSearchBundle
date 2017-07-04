@@ -75,7 +75,7 @@ class ElasticSearchEventListenerTest extends KernelTestCase
 
         $query->setSize(1);
         $resultSet = $search->search($query);
-        $this->assertEquals('Event Listener Test' , $resultSet->getResults()[0]->getSource()["name"]);
+        $this->assertEquals('Event Listener Test', $resultSet->getResults()[0]->getSource()["name"]);
     }
 
     public function testEventRemove()
@@ -87,6 +87,7 @@ class ElasticSearchEventListenerTest extends KernelTestCase
 
         $event = new ElasticSearchEvent('remove', $fake);
         $this->_eventDispatcher->dispatch("headoo.elasticsearch.event", $event);
+        $this->assertEquals('Event Listener Test', $fake->getName());
     }
 
     public function testEventRemoveNoId()
@@ -96,6 +97,7 @@ class ElasticSearchEventListenerTest extends KernelTestCase
 
         $event = new ElasticSearchEvent('remove', $fake);
         $this->_eventDispatcher->dispatch("headoo.elasticsearch.event", $event);
+        $this->assertEquals('Event Listener Test', $fake->getName());
     }
 
     public function loadFixtures(array $options = [])
