@@ -46,7 +46,6 @@ class ExodusElasticCommandTest extends KernelTestCase
             '--limit'  => 1000,
             '--batch'  => 10,
             '--offset' => 100,
-            '--type'   => 'FakeEntity',
             '--dry-run' => true,
             '--verbose' => true
         ];

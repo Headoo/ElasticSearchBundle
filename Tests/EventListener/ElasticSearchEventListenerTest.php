@@ -86,6 +86,10 @@ class ElasticSearchEventListenerTest extends KernelTestCase
         $this->_em->flush();
 
         $event = new ElasticSearchEvent('remove', $fake);
+
+        self::assertEquals('remove', $event->getAction());
+        self::assertEquals($fake, $event->getEntity());
+
         $this->_eventDispatcher->dispatch("headoo.elasticsearch.event", $event);
         $this->assertEquals('Event Listener Test', $fake->getName());
     }
