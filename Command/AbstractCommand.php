@@ -94,6 +94,7 @@ abstract class AbstractCommand  extends ContainerAwareCommand
      */
     protected function getProgressBar($output, $max)
     {
+        $max = ($max > 0) ? $max : 1;
         $progressBar = new ProgressBar($output, $max);
 
         if ($this->verbose) {
