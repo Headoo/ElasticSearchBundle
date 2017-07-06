@@ -39,16 +39,38 @@ class ExodusElasticCommandTest extends KernelTestCase
         $this->loadFixtures();
     }
 
-    public function testCommand1()
+    public function testCommandFakeEntity()
     {
         $options1 = [
             'command'  => 'headoo:elastic:exodus',
             '--limit'  => 1000,
             '--batch'  => 10,
-            '--offset' => 100
+            '--offset' => 100,
+            '--type'   => 'FakeEntity',
+            '--dry-run' => true,
+            '--verbose' => true
         ];
 
-        $this->application->run(new ArrayInput($options1));
+        $returnValue = $this->application->run(new ArrayInput($options1));
+
+        self::assertEquals(0, $returnValue, 'This command should succeed');
+    }
+
+    public function testCommandWrongType()
+    {
+        $options1 = [
+            'command'  => 'headoo:elastic:exodus',
+            '--limit'  => 1000,
+            '--batch'  => 10,
+            '--offset' => 100,
+            '--type'   => 'UnknownType',
+            '--dry-run' => true,
+            '--verbose' => true
+        ];
+
+        $returnValue = $this->application->run(new ArrayInput($options1));
+
+        self::assertNotEquals(0, $returnValue, 'This command should failed: UNKNOWN TYPE');
     }
 
     public function loadFixtures(array $options = [])
@@ -65,6 +87,17 @@ class ExodusElasticCommandTest extends KernelTestCase
         $purger = new ORMPurger($this->_em);
         $executor = new ORMExecutor($this->_em, $purger);
         $executor->execute($loader->getFixtures());
+
+        # Populate ES
+        $options4['command'] = 'headoo:elastic:populate';
+        $options4['--reset'] = true;
+        $options4['--type'] = 'FakeEntity';
+        $this->application->run(new ArrayInput($options4));
+
+        # Remove one entity in Doctrine
+        $entity = $this->_em->getRepository('FakeEntity')->findOneBy([]);
+        $this->_em->remove($entity);
+        $this->_em->flush($entity);
     }
 
 }
