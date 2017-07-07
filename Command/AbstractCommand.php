@@ -68,7 +68,7 @@ abstract class AbstractCommand  extends ContainerAwareCommand
         $this->limit  = $input->getOption('limit') ?: null;
         $this->offset = $input->getOption('offset') ?: 0;
         $this->type   = $input->getOption('type');
-        $this->batch  = $input->getOption('batch');
+        $this->batch  = $input->getOption('batch') ?: $this->batch;
 
         if ($input->hasOption('reset')) {
             $this->reset   = $input->getOption('reset');

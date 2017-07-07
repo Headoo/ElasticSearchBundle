@@ -14,6 +14,9 @@ class ExodusElasticCommand extends AbstractCommand
     protected $counterDocumentTested = 0;
     protected $counterEntitiesRemoved = 0;
 
+    /** @var int */
+    protected $batch = 100;
+
     protected function configure()
     {
         $this
