@@ -89,6 +89,7 @@ class ExodusElasticCommand extends AbstractCommand
 
             # Look up into Doctrine the associated Entity with the given document
             $entity = $repository->find($documentId);
+            $this->entityManager->clear();
 
             if (!is_null($entity)) {
                 continue;
@@ -105,7 +106,10 @@ class ExodusElasticCommand extends AbstractCommand
             if ($response->hasError()&& $this->verbose) {
                 $this->output->writeln(self::CLEAR_LINE . "\tError: {$response->getError()}");
             }
+
+            gc_collect_cycles();
         }
+
     }
 
     /**
@@ -126,7 +130,7 @@ class ExodusElasticCommand extends AbstractCommand
      */
     private function processBatch($sType)
     {
-        $this->output->writeln('<info>' . $this->completeLine("Start Exodus {$sType}") . '</info>');
+        $this->output->writeln('<info>' . $this->completeLine("Start Exodus '{$sType}'") . '</info>');
 
         $repository = $this->getRepositoryFromType($sType);
         $index      = $this->getIndexFromType($sType);
@@ -138,12 +142,15 @@ class ExodusElasticCommand extends AbstractCommand
         $this->initCounter();
 
         do {
+            unset($resultSet);
+
             $query = new Query();
             $query->setFrom($from);
             $query->setSize($this->batch);
 
             # Get documents from ElasticSearch
             $resultSet = $index->search($query);
+            unset($query);
 
             $this->removeFromElasticSearch($index->getType($sType), $repository, $resultSet);
 
@@ -157,8 +164,12 @@ class ExodusElasticCommand extends AbstractCommand
 
         $progressBar->finish();
 
+        unset($progressBar);
+
         $this->output->writeln(self::CLEAR_LINE . "{$sType}: Documents tested: {$this->counterDocumentTested} Entities removed: {$this->counterEntitiesRemoved}");
-        $this->output->writeln('<info>' . $this->completeLine("Finish Exodus {$sType}") . '</info>');
+        $this->output->writeln('<info>' . $this->completeLine("Finish Exodus '{$sType}'") . '</info>');
+
+        gc_collect_cycles();
 
         return AbstractCommand::EXIT_SUCCESS;
     }
