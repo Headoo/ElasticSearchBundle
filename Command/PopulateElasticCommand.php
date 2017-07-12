@@ -163,6 +163,8 @@ class PopulateElasticCommand extends AbstractCommand
             // continue loop while there are processes being executed or waiting for execution
         } while (count($processesQueue) > 0 || count($currentProcesses) > 0);
 
+        $progressBar->finish();
+
         return $returnValue;
     }
 
