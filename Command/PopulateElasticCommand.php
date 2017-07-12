@@ -39,42 +39,45 @@ class PopulateElasticCommand extends AbstractCommand
         }
 
         if($input->getOption('type')){
-            $this->_switchType($this->type, $this->batch);
-            return AbstractCommand::EXIT_SUCCESS;
+            return $this->_switchType($this->type, $this->batch);
         }
 
+        $returnValue = self::EXIT_SUCCESS;
         foreach ($this->aTypes as $type){
-            $this->_switchType($type, $this->batch);
+            $returnedValue = $this->_switchType($type, $this->batch);
+            if ($returnedValue != self::EXIT_SUCCESS) {
+                $returnValue = self::EXIT_FAILED;
+            }
         }
 
-        return AbstractCommand::EXIT_SUCCESS;
+        return $returnValue;
     }
 
     /**
-     * @param $type
-     * @param $batch
+     * @param string $type
+     * @param int $batch
+     * @return int
      */
     private function _switchType($type, $batch)
     {
         if(in_array($type, $this->aTypes)){
             $this->output->writeln($this->completeLine("BEGIN {$type}"));
             if($this->reset){
-                $this->output->writeln($this->completeLine("RESET INDEX"));
-                $index_name = $this->getContainer()->get('headoo.elasticsearch.handler')->getIndexName($type);
-                $connection = $this->mappings[$type]['connection'];
-                $index      = $this->mappings[$type]['index'];
-                $this->elasticSearchHelper->getClient($connection)->getIndex($index_name)->create($index, true);
+                $this->_resetType($type);
             }
-            if(!$batch){
+
+            $returnValue = ($batch) ?
+                $this->beginBatch($type) :
                 $this->processBatch($type, $this->getContainer()->get($this->mappings[$type]['transformer']));
-            }else{
-                $this->beginBatch($type);
-            }
+
             $this->output->writeln($this->completeLine("FINISH {$type}"));
-            return;
+
+            return $returnValue;
         }
 
         $this->output->writeln($this->completeLine("Wrong Type"));
+
+        return self::EXIT_FAILED;
     }
 
     /**
@@ -110,6 +113,7 @@ class PopulateElasticCommand extends AbstractCommand
      * @param $maxParallel
      * @param int $poll
      * @param int $numberOfEntities
+     * @return int
      */
     public function runParallel(ProgressBar $progressBar, array $processes, $maxParallel, $poll = 1000, $numberOfEntities)
     {
@@ -127,6 +131,7 @@ class PopulateElasticCommand extends AbstractCommand
 
         $progression = $this->offset;
         $progressMax = $numberOfEntities + $this->offset;
+        $returnValue = self::EXIT_SUCCESS;
 
         do {
             // wait for the given time
@@ -134,6 +139,11 @@ class PopulateElasticCommand extends AbstractCommand
             // remove all finished processes from the stack
             foreach ($currentProcesses as $index => $process) {
                 if (!$process->isRunning()) {
+                    if ($process->getExitCode() != self::EXIT_SUCCESS) {
+                        $this->output->writeln($process->getErrorOutput());
+                        $returnValue = self::EXIT_FAILED;
+                    }
+
                     unset($currentProcesses[$index]);
 
                     $progression += $this->limit;
@@ -152,10 +162,13 @@ class PopulateElasticCommand extends AbstractCommand
 
             // continue loop while there are processes being executed or waiting for execution
         } while (count($processesQueue) > 0 || count($currentProcesses) > 0);
+
+        return $returnValue;
     }
 
     /**
      * @param $type
+     * @return int
      */
     public function beginBatch($type)
     {
@@ -163,20 +176,20 @@ class PopulateElasticCommand extends AbstractCommand
         $aProcess = [];
         $numberOfEntities = $numberObjects - $this->offset;
         $numberOfProcess = floor($numberOfEntities / $this->limit);
+        $sOptions = $this->getOptionsToString(['type', 'limit', 'offset', 'threads', 'batch']);
 
         $progressBar = $this->getProgressBar($this->output, $numberOfEntities);
 
         for ($i = 0; $i <= $numberOfProcess; $i++) {
             $_offset = $this->offset + ($this->limit * $i);
-            $process = new Process("php app/console headoo:elastic:populate --type={$type} --limit={$this->limit} --offset={$_offset}");
+            $process = new Process("php app/console headoo:elastic:populate --type={$type} --limit={$this->limit} --offset={$_offset} " . $sOptions);
             $aProcess[] = $process;
         }
 
         $max_parallel_processes = $this->threads;
         $polling_interval = 1000; // microseconds
-        $this->runParallel($progressBar, $aProcess, $max_parallel_processes, $polling_interval, $numberOfEntities);
 
-        return;
+        return $this->runParallel($progressBar, $aProcess, $max_parallel_processes, $polling_interval, $numberOfEntities);
     }
 
     /**
@@ -226,14 +239,38 @@ class PopulateElasticCommand extends AbstractCommand
 
             $progressBar->setMessage(($progression++) . "/{$progressMax}");
             $progressBar->advance();
+
+            gc_collect_cycles();
         }
 
-        $this->_bulk($objectType,$aDocuments);
-        $this->output->writeln($this->completeLine("Start populate {$type}"));
+        $this->_bulk($objectType, $aDocuments);
+        $this->output->writeln($this->completeLine("Start populate '{$type}'"));
 
         $progressBar->finish();
         $this->output->writeln('');
         $this->output->writeln("<info>" . $this->completeLine("Finish populate {$type}") . "</info>");
+    }
+
+    /**
+     * @param string $type
+     * @return bool
+     */
+    private function _resetType($type)
+    {
+        $this->output->writeln($this->completeLine("RESET INDEX"));
+
+        $index_name = $this->getContainer()->get('headoo.elasticsearch.handler')->getIndexName($type);
+        $connection = $this->mappings[$type]['connection'];
+        $index      = $this->mappings[$type]['index'];
+
+        $response = $this->elasticSearchHelper->getClient($connection)->getIndex($index_name)->create($index, true);
+
+        if ($response->hasError()) {
+            $this->output->writeln("Cannot reset index '{$type}': " . $response->getErrorMessage());
+            return false;
+        }
+
+        return true;
     }
 
 }

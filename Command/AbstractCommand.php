@@ -19,6 +19,8 @@ abstract class AbstractCommand  extends ContainerAwareCommand
 
     /** @var OutputInterface */
     protected $output;
+    /** @var InputInterface */
+    protected $input;
     /** @var integer */
     protected $threads;
     /** @var integer */
@@ -43,6 +45,8 @@ abstract class AbstractCommand  extends ContainerAwareCommand
     protected $verbose = false;
     /** @var bool $dryRun Do not make any change on ES */
     protected $dryRun = false;
+    /** @var string */
+    protected $environment;
 
     /**
      * @param InputInterface $input
@@ -50,14 +54,48 @@ abstract class AbstractCommand  extends ContainerAwareCommand
      */
     protected function init(InputInterface $input, OutputInterface $output)
     {
-        $this->readOption($input);
-
         $this->output              = $output;
+        $this->input               = $input;
+
         $this->elasticSearchHelper = $this->getContainer()->get('headoo.elasticsearch.helper');
         $this->mappings            = $this->getContainer()->getParameter('elastica_mappings');
         $this->entityManager       = $this->getContainer()->get('doctrine.orm.entity_manager');
+        $this->environment         = $this->getContainer()->get('kernel')->getEnvironment();
 
         $this->aTypes = array_keys($this->mappings);
+
+        $this->readOption($input);
+
+        if ($this->environment == 'prod') {
+            $this->entityManager->getConnection()->getConfiguration()->setSQLLogger(null);
+            $this->entityManager->flush();
+            $this->entityManager->clear();
+        }
+    }
+
+    /**
+     * @param array $excludedOption
+     * @return string
+     */
+    protected function getOptionsToString($excludedOption = [])
+    {
+        $aOptions = $this->input->getOptions();
+        $sOptions = '';
+
+        foreach ($aOptions as $key => $value) {
+            if ($value === false || in_array($key, $excludedOption)) {
+                continue;
+            }
+
+            if ($value === true) {
+                $sOptions .= " --$key";
+                continue;
+            }
+
+            $sOptions .= " --$key=$value";
+        }
+
+        return $sOptions;
     }
 
     /**
@@ -115,18 +153,18 @@ abstract class AbstractCommand  extends ContainerAwareCommand
      */
     protected function completeLine($msg)
     {
-        $nbrAstrix = (self::LINE_LENGTH - strlen($msg) - 2) / 2;
+        $nbrAstrix = (self::LINE_LENGTH - strlen($msg) - 4) / 2;
 
         if ($nbrAstrix <= 0) {
             return $msg;
         }
 
         $sAstrix = str_repeat('*', $nbrAstrix);
-        $sReturn = "$sAstrix $msg $sAstrix";
+        $sReturn = "$sAstrix  $msg  $sAstrix";
 
         return (strlen($sReturn) == self::LINE_LENGTH)
-            ? $sReturn
-            : $sReturn . '*';
+            ? self::CLEAR_LINE . $sReturn
+            : self::CLEAR_LINE . $sReturn . '*';
     }
 
     /**
