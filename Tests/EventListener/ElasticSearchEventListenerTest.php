@@ -45,6 +45,7 @@ class ElasticSearchEventListenerTest extends KernelTestCase
      */
     public function setUp()
     {
+        parent::setUp();
         self::bootKernel();
 
         $this->_em                      = static::$kernel->getContainer()->get('doctrine')->getManager();
@@ -75,7 +76,8 @@ class ElasticSearchEventListenerTest extends KernelTestCase
 
         $query->setSize(1);
         $resultSet = $search->search($query);
-        $this->assertEquals('Event Listener Test', $resultSet->getResults()[0]->getSource()["name"]);
+
+        self::assertEquals('Event Listener Test', $resultSet->getResults()[0]->getSource()["name"]);
     }
 
     public function testEventRemove()
@@ -91,7 +93,23 @@ class ElasticSearchEventListenerTest extends KernelTestCase
         self::assertEquals($fake, $event->getEntity());
 
         $this->_eventDispatcher->dispatch("headoo.elasticsearch.event", $event);
-        $this->assertEquals('Event Listener Test', $fake->getName());
+        self::assertEquals('Event Listener Test', $fake->getName());
+    }
+
+    public function testEventUpdate()
+    {
+        $fake = new FakeEntity();
+        $fake->setName('Event Listener Test');
+        $this->_em->persist($fake);
+        $this->_em->flush();
+
+        $event = new ElasticSearchEvent('update', $fake);
+
+        self::assertEquals('update', $event->getAction());
+        self::assertEquals($fake, $event->getEntity());
+
+        $this->_eventDispatcher->dispatch("headoo.elasticsearch.event", $event);
+        self::assertEquals('Event Listener Test', $fake->getName());
     }
 
     public function testEventRemoveNoId()
@@ -101,7 +119,7 @@ class ElasticSearchEventListenerTest extends KernelTestCase
 
         $event = new ElasticSearchEvent('remove', $fake);
         $this->_eventDispatcher->dispatch("headoo.elasticsearch.event", $event);
-        $this->assertEquals('Event Listener Test', $fake->getName());
+        self::assertEquals('Event Listener Test', $fake->getName());
     }
 
     public function loadFixtures(array $options = [])

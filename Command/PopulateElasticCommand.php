@@ -13,8 +13,7 @@ class PopulateElasticCommand extends AbstractCommand
 
     protected function configure()
     {
-        $this
-            ->setName('headoo:elastic:populate')
+        $this->setName('headoo:elastic:populate')
             ->setDescription('Repopulate Elastic Search')
             ->addOption('limit',   null, InputOption::VALUE_OPTIONAL, 'Limit For selected Type', 0)
             ->addOption('offset',  null, InputOption::VALUE_OPTIONAL, 'Offset For selected Type', 0)
@@ -61,7 +60,7 @@ class PopulateElasticCommand extends AbstractCommand
     private function _switchType($type, $batch)
     {
         if(in_array($type, $this->aTypes)){
-            $this->output->writeln($this->completeLine("BEGIN {$type}"));
+            $this->output->writeln(self::completeLine("BEGIN {$type}"));
             if($this->reset){
                 $this->_resetType($type);
             }
@@ -70,12 +69,12 @@ class PopulateElasticCommand extends AbstractCommand
                 $this->beginBatch($type) :
                 $this->processBatch($type, $this->getContainer()->get($this->mappings[$type]['transformer']));
 
-            $this->output->writeln($this->completeLine("FINISH {$type}"));
+            $this->output->writeln(self::completeLine("FINISH {$type}"));
 
             return $returnValue;
         }
 
-        $this->output->writeln($this->completeLine("Wrong Type"));
+        $this->output->writeln(self::completeLine("Wrong Type"));
 
         return self::EXIT_FAILED;
     }
@@ -163,6 +162,7 @@ class PopulateElasticCommand extends AbstractCommand
             // continue loop while there are processes being executed or waiting for execution
         } while (count($processesQueue) > 0 || count($currentProcesses) > 0);
 
+        $progressBar->setProgress($numberOfEntities);
         $progressBar->finish();
 
         return $returnValue;
@@ -200,13 +200,13 @@ class PopulateElasticCommand extends AbstractCommand
      */
     public function processBatch($type, $transformer)
     {
-        $this->output->writeln($this->completeLine("Creating Type {$type} and Mapping"));
+        $this->output->writeln(self::completeLine("Creating Type {$type} and Mapping"));
 
         $objectType = $this->getIndexFromType($type)->getType($type);
         $this->_mappingFields($objectType, $this->mappings[$type]['mapping']);
 
-        $this->output->writeln($this->completeLine("Finish Type {$type} and Mapping"));
-        $this->output->writeln($this->completeLine("Start populate {$type}"));
+        $this->output->writeln(self::completeLine("Finish Type {$type} and Mapping"));
+        $this->output->writeln(self::completeLine("Start populate {$type}"));
 
         $iResults = $this->entityManager->createQuery("SELECT COUNT(u) FROM {$this->mappings[$type]['class']} u")->getResult()[0][1];
         $q = $this->entityManager->createQuery("select u from {$this->mappings[$type]['class']} u");
@@ -246,11 +246,11 @@ class PopulateElasticCommand extends AbstractCommand
         }
 
         $this->_bulk($objectType, $aDocuments);
-        $this->output->writeln($this->completeLine("Start populate '{$type}'"));
+        $this->output->writeln(self::completeLine("Start populate '{$type}'"));
 
         $progressBar->finish();
         $this->output->writeln('');
-        $this->output->writeln("<info>" . $this->completeLine("Finish populate {$type}") . "</info>");
+        $this->output->writeln("<info>" . self::completeLine("Finish populate {$type}") . "</info>");
     }
 
     /**
@@ -259,7 +259,7 @@ class PopulateElasticCommand extends AbstractCommand
      */
     private function _resetType($type)
     {
-        $this->output->writeln($this->completeLine("RESET INDEX"));
+        $this->output->writeln(self::completeLine("RESET INDEX"));
 
         $index_name = $this->getContainer()->get('headoo.elasticsearch.handler')->getIndexName($type);
         $connection = $this->mappings[$type]['connection'];

@@ -45,6 +45,14 @@ $mapping['FakeEntity']['mapping'] = array(
     'date'              => array('type' => 'date', 'include_in_all' => FALSE),
 );
 
+$mapping['FakeNoAutoEventEntity'] = [
+    'class'         => '\Headoo\ElasticSearchBundle\Tests\Entity\FakeNoAutoEventEntity',
+    'index'         => $elasticaIndex,
+    'transformer'   => 'elastic.fakenoautoevententity.transformer',
+    'connection'    => 'localhost',
+    'index_name'    => 'test_noauto',
+];
+
 $mapping['FakeEntity']['class']         = '\Headoo\ElasticSearchBundle\Tests\Entity\FakeEntity';
 $mapping['FakeEntity']['index']         = $elasticaIndex;
 $mapping['FakeEntity']['transformer']   = 'elastic.fakeentity.transformer';

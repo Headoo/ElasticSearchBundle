@@ -24,9 +24,9 @@ abstract class AbstractCommand  extends ContainerAwareCommand
     /** @var integer */
     protected $threads;
     /** @var integer */
-    protected $limit;
+    protected $limit = null;
     /** @var integer */
-    protected $offset;
+    protected $offset = 0;
     /** @var bool  */
     protected $batch = false;
     /** @var string */
@@ -103,10 +103,16 @@ abstract class AbstractCommand  extends ContainerAwareCommand
      */
     protected function readOption(InputInterface $input)
     {
-        $this->limit  = $input->getOption('limit') ?: null;
-        $this->offset = $input->getOption('offset') ?: 0;
         $this->type   = $input->getOption('type');
         $this->batch  = $input->getOption('batch') ?: $this->batch;
+
+        if ($input->hasOption('limit')) {
+            $this->limit = $input->getOption('limit');
+        }
+
+        if ($input->hasOption('offset')) {
+            $this->offset  = $input->getOption('offset');
+        }
 
         if ($input->hasOption('reset')) {
             $this->reset   = $input->getOption('reset');
@@ -135,12 +141,11 @@ abstract class AbstractCommand  extends ContainerAwareCommand
         $max = ($max > 0) ? $max : 1;
         $progressBar = new ProgressBar($output, $max);
 
-        if ($this->verbose) {
-            $progressBar->setFormat('%message% Doc. %percent%% [%bar%] (%elapsed% - %estimated%) (%memory%)' . "\r");
-        } else {
-            $progressBar->setFormat('%message% %percent%% [%bar%] (%elapsed% - %estimated%)' . "\r");
-        }
+        $sFormat = ($this->verbose)
+            ? '%message% Doc. %percent%% [%bar%] (%elapsed% - %remaining%) (%memory%)' . "\r"
+            : '%message% %percent%% [%bar%] (%elapsed% - %remaining%)' . "\r";
 
+        $progressBar->setFormat($sFormat);
         $progressBar->setMessage('');
         $progressBar->start();
 
@@ -151,7 +156,7 @@ abstract class AbstractCommand  extends ContainerAwareCommand
      * @param $msg
      * @return string
      */
-    protected function completeLine($msg)
+    static public function completeLine($msg)
     {
         $nbrAstrix = (self::LINE_LENGTH - strlen($msg) - 4) / 2;
 
@@ -173,14 +178,12 @@ abstract class AbstractCommand  extends ContainerAwareCommand
      */
     protected function getIndexFromType($sType)
     {
-        $connection = $this->mappings[$sType]['connection'];
-
         $index_name = $this->getContainer()
             ->get('headoo.elasticsearch.handler')
             ->getIndexName($sType);
 
-        return $this->elasticSearchHelper
-            ->getClient($connection)
+        return $this
+            ->getClient($sType)
             ->getIndex($index_name);
     }
 
@@ -191,6 +194,17 @@ abstract class AbstractCommand  extends ContainerAwareCommand
     protected function getRepositoryFromType($sType)
     {
         return $this->entityManager->getRepository($this->mappings[$sType]['class']);
+    }
+
+    /**
+     * @param string $sType
+     * @return \Elastica\Client
+     */
+    protected function getClient($sType)
+    {
+        $connection = $this->mappings[$sType]['connection'];
+
+        return $this->elasticSearchHelper->getClient($connection);
     }
 
 }

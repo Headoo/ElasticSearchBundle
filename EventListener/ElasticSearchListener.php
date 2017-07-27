@@ -22,6 +22,13 @@ class ElasticSearchListener implements EventSubscriber
     /** @var array  */
     protected $mapping;
 
+    static protected $subscribedEvents = [
+        'postPersist',
+        'postUpdate',
+        'postRemove',
+        'preRemove'
+    ];
+
     /**
      * @param $eventDispatcher
      */
@@ -44,12 +51,7 @@ class ElasticSearchListener implements EventSubscriber
 
     public function getSubscribedEvents()
     {
-        return [
-            'postPersist',
-            'postUpdate',
-            'postRemove',
-            'preRemove'
-        ];
+        return self::$subscribedEvents;
     }
 
     /**
@@ -94,20 +96,23 @@ class ElasticSearchListener implements EventSubscriber
         $a      = explode("\\",get_class($entity));
         $type   = end($a);
 
-        if (in_array($type, $this->aTypes)) {
-            if (array_key_exists('auto_event',$this->mapping[$type])) {
-                $this->_catchEvent(
-                    $entity,
-                    $this->mapping[$type]['transformer'],
-                    $this->mapping[$type]['connection'],
-                    $this->elasticSearchHandler->getIndexName($type),
-                    $action
-                );
-            } else {
-                $event = new ElasticSearchEvent($action, $entity);
-                $this->eventDispatcher->dispatch("headoo.elasticsearch.event", $event);
-            }
+        if (!in_array($type, $this->aTypes)) {
+            return;
         }
+
+        if (!array_key_exists('auto_event', $this->mapping[$type])) {
+            $event = new ElasticSearchEvent($action, $entity);
+            $this->eventDispatcher->dispatch("headoo.elasticsearch.event", $event);
+            return;
+        }
+
+        $this->_catchEvent(
+            $entity,
+            $this->mapping[$type]['transformer'],
+            $this->mapping[$type]['connection'],
+            $this->elasticSearchHandler->getIndexName($type),
+            $action
+        );
     }
 
     /**
@@ -121,9 +126,10 @@ class ElasticSearchListener implements EventSubscriber
     {
         if (($action == 'persist' || $action == 'update') && !$this->isSoftDeleted($entity)) {
             $this->elasticSearchHandler->sendToElastic($entity, $transformer, $connectionName, $indexName);
-        } else {
-            $this->elasticSearchHandler->removeFromElastic($entity, $connectionName, $indexName);
+            return;
         }
+
+        $this->elasticSearchHandler->removeFromElastic($entity, $connectionName, $indexName);
     }
 
     /**

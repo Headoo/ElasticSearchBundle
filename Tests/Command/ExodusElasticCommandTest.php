@@ -47,7 +47,8 @@ class ExodusElasticCommandTest extends KernelTestCase
             '--batch'  => 10,
             '--offset' => 100,
             '--dry-run' => true,
-            '--verbose' => true
+            '--verbose' => true,
+            '--env'     => 'prod',
         ];
 
         $returnValue = $this->application->run(new ArrayInput($options1));
@@ -90,11 +91,11 @@ class ExodusElasticCommandTest extends KernelTestCase
         # Populate ES
         $options4['command'] = 'headoo:elastic:populate';
         $options4['--reset'] = true;
-        $options4['--type'] = 'FakeEntity';
+        $options4['--type'] = 'FakeNoAutoEventEntity';
         $this->application->run(new ArrayInput($options4));
 
         # Remove one entity in Doctrine
-        $entity = $this->_em->getRepository('\Headoo\ElasticSearchBundle\Tests\Entity\FakeEntity')->findOneBy([]);
+        $entity = $this->_em->getRepository('\Headoo\ElasticSearchBundle\Tests\Entity\FakeNoAutoEventEntity')->findOneBy([]);
         $this->_em->remove($entity);
         $this->_em->flush($entity);
     }

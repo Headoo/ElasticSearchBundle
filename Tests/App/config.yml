@@ -33,3 +33,5 @@ doctrine:
 services:
     elastic.fakeentity.transformer:
         class: Headoo\ElasticSearchBundle\Tests\Transformer\FakeEntityTransformer
+    elastic.fakenoautoevententity.transformer:
+        class: Headoo\ElasticSearchBundle\Tests\Transformer\FakeEntityTransformer

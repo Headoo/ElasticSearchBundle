@@ -120,6 +120,18 @@ class PopulateElasticCommandTest extends KernelTestCase
         $this->assertGreaterThan(-1, count($resultSet->getResults()));
     }
 
+    public function testCommandWrongType()
+    {
+        $options1 = [
+            'command'  => 'headoo:elastic:populate',
+            '--type'   => 'UnknownType',
+        ];
+
+        $returnValue = $this->application->run(new ArrayInput($options1));
+
+        self::assertNotEquals(0, $returnValue, 'This command should failed: UNKNOWN TYPE');
+    }
+
     public function loadFixtures(array $options = [])
     {
         $options['command'] = 'doctrine:database:create';
