@@ -50,11 +50,11 @@ $defaultMapping = [
 ];
 
 $mapping['FakeNoAutoEventEntity'] = [
-    'class'         => '\Headoo\ElasticSearchBundle\Tests\Entity\FakeNoAutoEventEntity',
+    'class'         => '\Headoo\ElasticSearchBundle\Tests\Entity\FakeEntity',
     'index'         => $elasticaIndex,
-    'transformer'   => 'elastic.fakenoautoevententity.transformer',
+    'transformer'   => 'elastic.fakeentity.transformer',
     'connection'    => 'localhost',
-    'index_name'    => 'test_noauto',
+    'index_name'    => 'test_no_auto_event',
     'mapping'       => $defaultMapping,
 ];
 
