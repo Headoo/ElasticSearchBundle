@@ -23,17 +23,17 @@ class ElasticSearchEventListenerTest extends KernelTestCase
     /**
      * @var \Headoo\ElasticSearchBundle\Helper\ElasticSearchHelper
      */
-    private $_elasticSearchHelper;
+    private $elasticSearchHelper;
 
     /**
      * @var EntityManager
      */
-    private $_em;
+    private $entityManager;
 
     /**
      * @var EventDispatcherInterface
      */
-    private $_eventDispatcher;
+    private $eventDispatcher;
 
     /**
      * @var Application
@@ -48,9 +48,9 @@ class ElasticSearchEventListenerTest extends KernelTestCase
         parent::setUp();
         self::bootKernel();
 
-        $this->_em                      = static::$kernel->getContainer()->get('doctrine')->getManager();
-        $this->_elasticSearchHelper     = static::$kernel->getContainer()->get('headoo.elasticsearch.helper');
-        $this->_eventDispatcher         = static::$kernel->getContainer()->get('event_dispatcher');
+        $this->entityManager           = static::$kernel->getContainer()->get('doctrine')->getManager();
+        $this->elasticSearchHelper     = static::$kernel->getContainer()->get('headoo.elasticsearch.helper');
+        $this->eventDispatcher         = static::$kernel->getContainer()->get('event_dispatcher');
 
         $this->application = new Application(self::$kernel);
         $this->application->setAutoExit(false);
@@ -61,10 +61,10 @@ class ElasticSearchEventListenerTest extends KernelTestCase
     {
         $fake = new FakeEntity();
         $fake->setName('Event Listener Test');
-        $this->_em->persist($fake);
-        $this->_em->flush();
+        $this->entityManager->persist($fake);
+        $this->entityManager->flush();
 
-        $search     = new Search($this->_elasticSearchHelper->getClient('localhost'));
+        $search     = new Search($this->elasticSearchHelper->getClient('localhost'));
         $search->addIndex('test');
         $query      = new Query();
         $boolQuery  = new Query\BoolQuery();
@@ -84,15 +84,15 @@ class ElasticSearchEventListenerTest extends KernelTestCase
     {
         $fake = new FakeEntity();
         $fake->setName('Event Listener Test');
-        $this->_em->persist($fake);
-        $this->_em->flush();
+        $this->entityManager->persist($fake);
+        $this->entityManager->flush();
 
         $event = new ElasticSearchEvent('remove', $fake);
 
         self::assertEquals('remove', $event->getAction());
         self::assertEquals($fake, $event->getEntity());
 
-        $this->_eventDispatcher->dispatch("headoo.elasticsearch.event", $event);
+        $this->eventDispatcher->dispatch("headoo.elasticsearch.event", $event);
         self::assertEquals('Event Listener Test', $fake->getName());
     }
 
@@ -100,15 +100,15 @@ class ElasticSearchEventListenerTest extends KernelTestCase
     {
         $fake = new FakeEntity();
         $fake->setName('Event Listener Test');
-        $this->_em->persist($fake);
-        $this->_em->flush();
+        $this->entityManager->persist($fake);
+        $this->entityManager->flush();
 
         $event = new ElasticSearchEvent('update', $fake);
 
         self::assertEquals('update', $event->getAction());
         self::assertEquals($fake, $event->getEntity());
 
-        $this->_eventDispatcher->dispatch("headoo.elasticsearch.event", $event);
+        $this->eventDispatcher->dispatch("headoo.elasticsearch.event", $event);
         self::assertEquals('Event Listener Test', $fake->getName());
     }
 
@@ -118,7 +118,7 @@ class ElasticSearchEventListenerTest extends KernelTestCase
         $fake->setName('Event Listener Test');
 
         $event = new ElasticSearchEvent('remove', $fake);
-        $this->_eventDispatcher->dispatch("headoo.elasticsearch.event", $event);
+        $this->eventDispatcher->dispatch("headoo.elasticsearch.event", $event);
         self::assertEquals('Event Listener Test', $fake->getName());
     }
 
@@ -133,8 +133,8 @@ class ElasticSearchEventListenerTest extends KernelTestCase
         $loader = new Loader();
         $loader->addFixture(new LoadData());
 
-        $purger = new ORMPurger($this->_em);
-        $executor = new ORMExecutor($this->_em, $purger);
+        $purger = new ORMPurger($this->entityManager);
+        $executor = new ORMExecutor($this->entityManager, $purger);
         $executor->execute($loader->getFixtures());
     }
 
