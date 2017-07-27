@@ -43,9 +43,7 @@ class ExodusElasticCommandTest extends KernelTestCase
     {
         $options1 = [
             'command'  => 'headoo:elastic:exodus',
-            '--limit'  => 1000,
             '--batch'  => 10,
-            '--offset' => 100,
             '--dry-run' => true,
             '--verbose' => true,
             '--env'     => 'prod',
@@ -60,9 +58,7 @@ class ExodusElasticCommandTest extends KernelTestCase
     {
         $options1 = [
             'command'  => 'headoo:elastic:exodus',
-            '--limit'  => 1000,
             '--batch'  => 10,
-            '--offset' => 100,
             '--type'   => 'UnknownType',
             '--dry-run' => true,
             '--verbose' => true
