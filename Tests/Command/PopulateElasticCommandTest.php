@@ -52,6 +52,7 @@ class PopulateElasticCommandTest extends KernelTestCase
     {
         $options1['command'] = 'headoo:elastic:populate';
         $options1['--reset'] = true;
+        $options1['--env'] = 'prod';
         $this->application->run(new ArrayInput($options1));
         $search = new Search($this->_elasticSearchHelper->getClient('localhost'));
         $search->addIndex('test');
@@ -134,6 +135,9 @@ class PopulateElasticCommandTest extends KernelTestCase
 
     public function loadFixtures(array $options = [])
     {
+        # Do not show output
+        self::setOutputCallback(function() {});
+
         $options['command'] = 'doctrine:database:create';
         $this->application->run(new ArrayInput($options));
 
