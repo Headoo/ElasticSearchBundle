@@ -95,7 +95,7 @@ class ExodusElasticCommandTest extends KernelTestCase
         $this->application->run(new ArrayInput($options4));
 
         # Remove one entity in Doctrine
-        $entity = $this->_em->getRepository('\Headoo\ElasticSearchBundle\Tests\Entity\FakeNoAutoEventEntity')->findOneBy([]);
+        $entity = $this->_em->getRepository('\Headoo\ElasticSearchBundle\Tests\Entity\FakeEntity')->findOneBy([]);
         $this->_em->remove($entity);
         $this->_em->flush($entity);
     }
