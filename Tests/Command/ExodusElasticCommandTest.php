@@ -71,6 +71,9 @@ class ExodusElasticCommandTest extends KernelTestCase
 
     public function loadFixtures(array $options = [])
     {
+        # Do not show output
+        self::setOutputCallback(function() {});
+
         $options['command'] = 'doctrine:database:create';
         $this->application->run(new ArrayInput($options));
 
