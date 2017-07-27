@@ -19,12 +19,12 @@ class PopulateElasticCommandTest extends KernelTestCase
     /**
      * @var \Headoo\ElasticSearchBundle\Helper\ElasticSearchHelper
      */
-    private $_elasticSearchHelper;
+    private $elasticSearchHelper;
 
     /**
      * @var EntityManager
      */
-    private $_em;
+    private $entityManager;
 
     /**
      * @var Application
@@ -37,11 +37,11 @@ class PopulateElasticCommandTest extends KernelTestCase
      */
     public function setUp()
     {
+        parent::setUp();
         self::bootKernel();
 
-
-        $this->_em = static::$kernel->getContainer()->get('doctrine')->getManager();
-        $this->_elasticSearchHelper = static::$kernel->getContainer()->get('headoo.elasticsearch.helper');
+        $this->entityManager = static::$kernel->getContainer()->get('doctrine')->getManager();
+        $this->elasticSearchHelper = static::$kernel->getContainer()->get('headoo.elasticsearch.helper');
         $this->application = new Application(self::$kernel);
         $this->application->setAutoExit(false);
 
@@ -50,11 +50,14 @@ class PopulateElasticCommandTest extends KernelTestCase
 
     public function testCommand1()
     {
-        $options1['command'] = 'headoo:elastic:populate';
-        $options1['--reset'] = true;
-        $options1['--env'] = 'prod';
+        $options1 = [
+            'command' => 'headoo:elastic:populate',
+            '--reset' => true,
+            '--env'   => 'prod'
+        ];
+
         $this->application->run(new ArrayInput($options1));
-        $search = new Search($this->_elasticSearchHelper->getClient('localhost'));
+        $search = new Search($this->elasticSearchHelper->getClient('localhost'));
         $search->addIndex('test');
         $query = new Query();
         $query->setSize(1000);
@@ -65,11 +68,14 @@ class PopulateElasticCommandTest extends KernelTestCase
 
     public function testCommand2()
     {
-        $options2['command'] = 'headoo:elastic:populate';
-        $options2['--reset'] = true;
-        $options2['--limit'] = 10;
+        $options2 = [
+            'command' => 'headoo:elastic:populate',
+            '--reset' => true,
+            '--limit' => 10,
+        ];
+
         $this->application->run(new ArrayInput($options2));
-        $search = new Search($this->_elasticSearchHelper->getClient('localhost'));
+        $search = new Search($this->elasticSearchHelper->getClient('localhost'));
         $search->addIndex('test');
         $query = new Query();
         $query->setSize(1000);
@@ -79,11 +85,14 @@ class PopulateElasticCommandTest extends KernelTestCase
 
     public function testCommand3()
     {
-        $options3['command'] = 'headoo:elastic:populate';
-        $options3['--reset'] = true;
-        $options3['--offset'] = 10;
+        $options3 = [
+            'command'  => 'headoo:elastic:populate',
+            '--reset'  => true,
+            '--offset' => 10,
+        ];
+
         $this->application->run(new ArrayInput($options3));
-        $search = new Search($this->_elasticSearchHelper->getClient('localhost'));
+        $search = new Search($this->elasticSearchHelper->getClient('localhost'));
         $search->addIndex('test');
         $query = new Query();
         $query->setSize(1000);
@@ -93,11 +102,14 @@ class PopulateElasticCommandTest extends KernelTestCase
 
     public function testCommand4()
     {
-        $options4['command'] = 'headoo:elastic:populate';
-        $options4['--reset'] = true;
-        $options4['--type'] = 'FakeEntity';
+        $options4 = [
+            'command' => 'headoo:elastic:populate',
+            '--reset' => true,
+            '--type'  => 'FakeEntity'
+        ];
+
         $this->application->run(new ArrayInput($options4));
-        $search     = new Search($this->_elasticSearchHelper->getClient('localhost'));
+        $search     = new Search($this->elasticSearchHelper->getClient('localhost'));
         $search->addIndex('test');
         $query      = new Query();
         $query->setSize(1000);
@@ -107,12 +119,15 @@ class PopulateElasticCommandTest extends KernelTestCase
 
     public function testCommandRunParallel()
     {
-        $optionsRunParallel['command'] = 'headoo:elastic:populate';
-        $optionsRunParallel['--reset'] = true;
-        $optionsRunParallel['--type'] = 'FakeEntity';
-        $optionsRunParallel['--batch'] = '4';
+        $optionsRunParallel = [
+            'command' => 'headoo:elastic:populate',
+            '--reset' => true,
+            '--type'  => 'FakeEntity',
+            '--batch' => '4',
+        ];
+
         $this->application->run(new ArrayInput($optionsRunParallel));
-        $search     = new Search($this->_elasticSearchHelper->getClient('localhost'));
+        $search     = new Search($this->elasticSearchHelper->getClient('localhost'));
         $search->addIndex('test');
         $query      = new Query();
         $query->setSize(1000);
@@ -147,8 +162,8 @@ class PopulateElasticCommandTest extends KernelTestCase
         $loader = new Loader();
         $loader->addFixture(new LoadData());
 
-        $purger = new ORMPurger($this->_em);
-        $executor = new ORMExecutor($this->_em, $purger);
+        $purger = new ORMPurger($this->entityManager);
+        $executor = new ORMExecutor($this->entityManager, $purger);
         $executor->execute($loader->getFixtures());
     }
 

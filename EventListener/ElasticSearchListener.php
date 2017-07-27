@@ -93,8 +93,8 @@ class ElasticSearchListener implements EventSubscriber
     public function sendEvent(LifecycleEventArgs $args, $action)
     {
         $entity = $args->getEntity();
-        $a      = explode("\\",get_class($entity));
-        $type   = end($a);
+        $array  = explode("\\",get_class($entity));
+        $type   = end($array);
 
         if (!in_array($type, $this->aTypes)) {
             return;

@@ -15,10 +15,10 @@ class ExodusElasticCommandTest extends KernelTestCase
 {
 
     /** @var \Headoo\ElasticSearchBundle\Helper\ElasticSearchHelper */
-    private $_elasticSearchHelper;
+    private $elasticSearchHelper;
 
     /** @var EntityManager */
-    private $_em;
+    private $entityManager;
 
     /** @var Application */
     protected $application;
@@ -29,10 +29,11 @@ class ExodusElasticCommandTest extends KernelTestCase
      */
     public function setUp()
     {
+        parent::setUp();
         self::bootKernel();
 
-        $this->_em = static::$kernel->getContainer()->get('doctrine')->getManager();
-        $this->_elasticSearchHelper = static::$kernel->getContainer()->get('headoo.elasticsearch.helper');
+        $this->entityManager = static::$kernel->getContainer()->get('doctrine')->getManager();
+        $this->elasticSearchHelper = static::$kernel->getContainer()->get('headoo.elasticsearch.helper');
         $this->application = new Application(self::$kernel);
         $this->application->setAutoExit(false);
 
@@ -83,8 +84,8 @@ class ExodusElasticCommandTest extends KernelTestCase
         $loader = new Loader();
         $loader->addFixture(new LoadData());
 
-        $purger = new ORMPurger($this->_em);
-        $executor = new ORMExecutor($this->_em, $purger);
+        $purger = new ORMPurger($this->entityManager);
+        $executor = new ORMExecutor($this->entityManager, $purger);
         $executor->execute($loader->getFixtures());
 
         # Populate ES
@@ -94,9 +95,9 @@ class ExodusElasticCommandTest extends KernelTestCase
         $this->application->run(new ArrayInput($options4));
 
         # Remove one entity in Doctrine
-        $entity = $this->_em->getRepository('\Headoo\ElasticSearchBundle\Tests\Entity\FakeEntity')->findOneBy([]);
-        $this->_em->remove($entity);
-        $this->_em->flush($entity);
+        $entity = $this->entityManager->getRepository('\Headoo\ElasticSearchBundle\Tests\Entity\FakeEntity')->findOneBy([]);
+        $this->entityManager->remove($entity);
+        $this->entityManager->flush($entity);
     }
 
 }

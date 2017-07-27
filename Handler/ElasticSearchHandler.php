@@ -39,8 +39,8 @@ class ElasticSearchHandler
      */
     public function sendToElastic($entity, $transformer, $connectionName,$indexName)
     {
-        $a          = explode("\\",get_class($entity));
-        $type       = end($a);
+        $array      = explode("\\",get_class($entity));
+        $type       = end($array);
         $document   = $this->container->get($transformer)->transform($entity);
         $index      = $this->elasticSearchHelper->getClient($connectionName)->getIndex($indexName);
 
@@ -63,8 +63,8 @@ class ElasticSearchHandler
             return;
         }
 
-        $a          = explode("\\",get_class($entity));
-        $type       = end($a);
+        $array      = explode("\\",get_class($entity));
+        $type       = end($array);
         $index      = $this->elasticSearchHelper->getClient($connectionName)->getIndex($indexName);
 
         try {

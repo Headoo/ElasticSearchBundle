@@ -162,6 +162,7 @@ class PopulateElasticCommand extends AbstractCommand
             // continue loop while there are processes being executed or waiting for execution
         } while (count($processesQueue) > 0 || count($currentProcesses) > 0);
 
+        $progressBar->setMessage("$numberOfEntities/$progressMax");
         $progressBar->setProgress($numberOfEntities);
         $progressBar->finish();
 
@@ -188,10 +189,7 @@ class PopulateElasticCommand extends AbstractCommand
             $aProcess[] = $process;
         }
 
-        $max_parallel_processes = $this->threads;
-        $polling_interval = 1000; // microseconds
-
-        return $this->runParallel($progressBar, $aProcess, $max_parallel_processes, $polling_interval, $numberOfEntities);
+        return $this->runParallel($progressBar, $aProcess, $this->threads, 1000, $numberOfEntities);
     }
 
     /**
@@ -209,19 +207,19 @@ class PopulateElasticCommand extends AbstractCommand
         $this->output->writeln(self::completeLine("Start populate {$type}"));
 
         $iResults = $this->entityManager->createQuery("SELECT COUNT(u) FROM {$this->mappings[$type]['class']} u")->getResult()[0][1];
-        $q = $this->entityManager->createQuery("select u from {$this->mappings[$type]['class']} u");
+        $query = $this->entityManager->createQuery("select u from {$this->mappings[$type]['class']} u");
 
         if($this->offset){
-            $q->setFirstResult($this->offset);
+            $query->setFirstResult($this->offset);
             $iResults = $iResults - $this->offset;
         }
 
         if($this->limit){
-            $q->setMaxResults($this->limit);
+            $query->setMaxResults($this->limit);
             $iResults = $this->limit;
         }
 
-        $iterableResult = $q->iterate();
+        $iterableResult = $query->iterate();
 
         $progressBar = $this->getProgressBar($this->output, $iResults);
         $progression = $this->offset;

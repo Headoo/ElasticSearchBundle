@@ -13,8 +13,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ExodusElasticCommand extends AbstractCommand
 {
     protected $nbrDocumentsFound = 0;
-    protected $counterDocumentTested = 0;
-    protected $counterEntitiesRemoved = 0;
+    protected $nbrDocumentTested = 0;
+    protected $nbrEntitiesRemoved = 0;
     protected $nbrDone = 0;
 
     /** @var int */
@@ -84,7 +84,7 @@ class ExodusElasticCommand extends AbstractCommand
     private function removeFromElasticSearch($type, $repository, $resultSet)
     {
         foreach ($resultSet as $result) {
-            $this->counterDocumentTested++;
+            $this->nbrDocumentTested++;
             $documentId = $result->getDocument()->getId();
 
             # Look up into Doctrine the associated Entity with the given document
@@ -100,16 +100,18 @@ class ExodusElasticCommand extends AbstractCommand
             }
 
             # Remove document from ElasticSearch
-            $this->counterEntitiesRemoved++;
+            $this->nbrEntitiesRemoved++;
+
+            if ($this->dryRun) {
+                continue;
+            }
+
             $response = $type->deleteById($documentId);
 
             if ($response->hasError()&& $this->verbose) {
                 $this->output->writeln(self::CLEAR_LINE . "\tError: {$response->getError()}");
             }
-
-            gc_collect_cycles();
         }
-
     }
 
     /**
@@ -142,24 +144,27 @@ class ExodusElasticCommand extends AbstractCommand
 
         $search = new Search($this->getClient($sType));
         $search->addIndex($index)->addType($sType);
-        $search->scroll('10m');
+        $search->scroll('2h');
+        $search->getQuery()->setSize($this->batch);
 
         $scroll = new Scroll($search);
 
         foreach ($scroll as $scrollId => $resultSet) {
             $this->removeFromElasticSearch($index->getType($sType), $repository, $resultSet);
 
-            $this->nbrDone += $this->batch;
+            $this->nbrDone += $resultSet->count();
             $progressBar->setMessage("{$this->nbrDone}/{$countTotalDocuments}");
-            $progressBar->advance($resultSet->count());
+            $progressBar->setProgress($this->nbrDone);
+
             unset($resultSet);
+            gc_collect_cycles();
         }
 
         $progressBar->finish();
 
         unset($progressBar);
 
-        $this->output->writeln(self::CLEAR_LINE . "{$sType}: Documents tested: {$this->counterDocumentTested} Entities removed: {$this->counterEntitiesRemoved}");
+        $this->output->writeln(self::CLEAR_LINE . "{$sType}: Documents tested: {$this->nbrDocumentTested} Entities removed: {$this->nbrEntitiesRemoved}");
         $this->output->writeln('<info>' . self::completeLine("Finish Exodus '{$sType}'") . '</info>');
 
         gc_collect_cycles();
@@ -169,8 +174,8 @@ class ExodusElasticCommand extends AbstractCommand
 
     private function initCounter()
     {
-        $this->counterEntitiesRemoved = 0;
-        $this->counterDocumentTested = 0;
+        $this->nbrEntitiesRemoved = 0;
+        $this->nbrDocumentTested = 0;
         $this->nbrDocumentsFound = 0;
         $this->nbrDone = 0;
     }
