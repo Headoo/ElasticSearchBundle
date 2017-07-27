@@ -5,13 +5,12 @@
  **********************************************************************
  */
 
-$connections =
-    array('localhost'=>
-        array(
-            'host'    => 'localhost',
-            'port'    => '9200',
-        )
-);
+$connections = [
+    'localhost' => [
+        'host' => 'localhost',
+        'port' => '9200',
+    ]
+];
 
 
 $container->setParameter('elastica_connections', $connections);
@@ -20,30 +19,44 @@ $container->setParameter('elastica_connections', $connections);
  ************************************INDEX*****************************
  **********************************************************************
  */
-$elasticaIndex = array(
+$elasticaIndex = [
     'number_of_shards' => 1,
     'number_of_replicas' => 1,
-    'analysis' => array(
-        'analyzer' => array(
-            'default' => array(
+    'analysis' => [
+        'analyzer' => [
+            'default' => [
                 'type' => 'custom',
                 'tokenizer' => 'standard',
-                'filter' => array('lowercase')
-            ),
-            'default_search' => array(
+                'filter' => ['lowercase']
+            ],
+            'default_search' => [
                 'type' => 'custom',
                 'tokenizer' => 'standard',
-                'filter' => array('standard', 'lowercase')
-            ),
-        ),
-    )
-);
+                'filter' => ['standard', 'lowercase']
+            ],
+        ],
+    ]
+];
 
+$defaultMapping = [
+    'id' => [
+        'type' => 'integer',
+        'include_in_all' => true
+    ],
+    'date' => [
+        'type' => 'date',
+        'include_in_all' => false
+    ],
+];
 
-$mapping['FakeEntity']['mapping'] = array(
-    'id'                => array('type' => 'integer', 'include_in_all' => TRUE),
-    'date'              => array('type' => 'date', 'include_in_all' => FALSE),
-);
+$mapping['FakeNoAutoEventEntity'] = [
+    'class'         => '\Headoo\ElasticSearchBundle\Tests\Entity\FakeEntity',
+    'index'         => $elasticaIndex,
+    'transformer'   => 'elastic.fakeentity.transformer',
+    'connection'    => 'localhost',
+    'index_name'    => 'test_no_auto_event',
+    'mapping'       => $defaultMapping,
+];
 
 $mapping['FakeEntity']['class']         = '\Headoo\ElasticSearchBundle\Tests\Entity\FakeEntity';
 $mapping['FakeEntity']['index']         = $elasticaIndex;
@@ -51,8 +64,7 @@ $mapping['FakeEntity']['transformer']   = 'elastic.fakeentity.transformer';
 $mapping['FakeEntity']['connection']    = 'localhost';
 $mapping['FakeEntity']['index_name']    = 'test';
 $mapping['FakeEntity']['auto_event']    = true;
-
+$mapping['FakeEntity']['mapping']       = $defaultMapping;
 
 
 $container->setParameter('elastica_mappings', $mapping);
-

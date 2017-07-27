@@ -314,7 +314,7 @@ If not, this command will remove the orphan document from ES.
 * --verbose : Make more verbose the output
 
 ## Security
-If you discover a security vulnerability , please email instead of using the issue tracker. All security vulnerabilities will be promptly addressed.
+If you discover a security vulnerability, please email instead of using the issue tracker. All security vulnerabilities will be promptly addressed.
 
 ## Standalone Test
 
