@@ -185,7 +185,7 @@ class PopulateElasticCommand extends AbstractCommand
 
         for ($i = 0; $i <= $numberOfProcess; $i++) {
             $_offset = $this->offset + ($this->limit * $i);
-            $process = new Process("php app/console headoo:elastic:populate --type={$type} --limit={$this->limit} --offset={$_offset} " . $sOptions);
+            $process = new Process("php $this->consoleDir headoo:elastic:populate --type={$type} --limit={$this->limit} --offset={$_offset} " . $sOptions);
             $aProcess[] = $process;
         }
 
