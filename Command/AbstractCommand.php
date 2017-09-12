@@ -47,6 +47,8 @@ abstract class AbstractCommand  extends ContainerAwareCommand
     protected $dryRun = false;
     /** @var string */
     protected $environment;
+    /** @var  string */
+    protected $consoleDir;
 
     /**
      * @param InputInterface $input
@@ -71,6 +73,9 @@ abstract class AbstractCommand  extends ContainerAwareCommand
             $this->entityManager->flush();
             $this->entityManager->clear();
         }
+
+        $symfony_version    = \Symfony\Component\HttpKernel\Kernel::VERSION;
+        $this->consoleDir   = $symfony_version[0] == 2 ? 'app/console' : 'bin/console';
     }
 
     /**
