@@ -104,7 +104,7 @@ class PopulateElasticCommand extends AbstractCommand
         if(count($aDocuments)){
             $responseSet = $type->addDocuments($aDocuments);
             if (!$responseSet->isOK()) {
-                throw new Exception(sprintf('status=`%s`, error=`%s`, data = `%s`', $response->getStatus(), $response->getError(), json_encode($response->getData())));
+                throw new Exception(sprintf('status=`%s`, error=`%s`, data = `%s`', $responseSet->getStatus(), $responseSet->getError(), json_encode($responseSet->getData())));
             }
             $type->getIndex()->refresh();
         }
