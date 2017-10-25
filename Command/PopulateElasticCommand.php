@@ -179,7 +179,7 @@ class PopulateElasticCommand extends AbstractCommand
         $aProcess = [];
         $numberOfEntities = $numberObjects - $this->offset;
         $numberOfProcess = floor($numberOfEntities / $this->limit);
-        $sOptions = $this->getOptionsToString(['type', 'limit', 'offset', 'threads', 'batch']);
+        $sOptions = $this->getOptionsToString(['type', 'limit', 'offset', 'threads', 'batch', 'reset']);
 
         $progressBar = $this->getProgressBar($this->output, $numberOfEntities);
 
