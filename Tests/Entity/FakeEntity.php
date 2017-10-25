@@ -18,15 +18,12 @@ class FakeEntity
      */
     protected $id;
 
-
     /**
      * @var string
      *
      * @ORM\Column(name="name", type="string", length=255)
      */
     protected $name;
-
-
 
     /**
      * Get id
@@ -42,7 +39,7 @@ class FakeEntity
      * Set name
      *
      * @param string $name
-     * @return City
+     * @return $this
      */
     public function setName($name)
     {
@@ -60,4 +57,5 @@ class FakeEntity
     {
         return $this->name;
     }
+
 }

@@ -21,4 +21,5 @@ class FakeEntityTransformer
         $document = new Document($identifier, $values);
         return $document;
     }
+
 }

@@ -1,8 +1,10 @@
 <?php
+
 namespace Headoo\ElasticSearchBundle\Handler;
+
+use Elastica\Exception\NotFoundException;
 use Headoo\ElasticSearchBundle\Helper\ElasticSearchHelper;
 use Symfony\Component\DependencyInjection\Container;
-
 
 /**
  * Class ElasticSearchHandler
@@ -35,14 +37,19 @@ class ElasticSearchHandler
      * @param $connectionName
      * @param $indexName
      */
-    public function sendToElastic($entity, $transformer, $connectionName,$indexName){
-        $a          = explode("\\",get_class($entity));
-        $type       = end($a);
+    public function sendToElastic($entity, $transformer, $connectionName,$indexName)
+    {
+        $array      = explode("\\",get_class($entity));
+        $type       = end($array);
         $document   = $this->container->get($transformer)->transform($entity);
         $index      = $this->elasticSearchHelper->getClient($connectionName)->getIndex($indexName);
 
-        $index->getType($type)->addDocument($document);
-        $index->refresh();
+        try {
+            $index->getType($type)->addDocument($document);
+            $index->refresh();
+        } catch(NotFoundException $e) {
+
+        }
     }
 
     /**
@@ -50,21 +57,30 @@ class ElasticSearchHandler
      * @param $connectionName
      * @param $indexName
      */
-    public function removeToElastic($entity, $connectionName,$indexName){
-        $a          = explode("\\",get_class($entity));
-        $type       = end($a);
+    public function removeFromElastic($entity, $connectionName, $indexName)
+    {
+        if (empty($entity->getId())) {
+            return;
+        }
+
+        $array      = explode("\\",get_class($entity));
+        $type       = end($array);
         $index      = $this->elasticSearchHelper->getClient($connectionName)->getIndex($indexName);
 
-        $index->getType($type)->deleteById($entity->getId());
-        $index->refresh();
-    }
+        try {
+            $index->getType($type)->deleteById($entity->getId());
+            $index->refresh();
+        } catch(NotFoundException $e) {
 
+        }
+    }
 
     /**
      * @param $type
      * @return string
      */
-    public function getIndexName($type){
+    public function getIndexName($type)
+    {
         if(array_key_exists('index_name', $this->mappings[$type])){
             $index_name = $this->mappings[$type]['index_name'];
         }else{
@@ -76,7 +92,9 @@ class ElasticSearchHandler
     /**
      * @return array
      */
-    public function getMappings(){
+    public function getMappings()
+    {
         return $this->mappings;
     }
+
 }

@@ -8,7 +8,6 @@ use Headoo\ElasticSearchBundle\Event\ElasticSearchEvent;
 use Headoo\ElasticSearchBundle\Handler\ElasticSearchHandler;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
-
 class ElasticSearchListener implements EventSubscriber
 {
     /** @var array  */
@@ -23,6 +22,12 @@ class ElasticSearchListener implements EventSubscriber
     /** @var array  */
     protected $mapping;
 
+    static protected $subscribedEvents = [
+        'postPersist',
+        'postUpdate',
+        'postRemove',
+        'preRemove'
+    ];
 
     /**
      * @param $eventDispatcher
@@ -44,14 +49,9 @@ class ElasticSearchListener implements EventSubscriber
         }
     }
 
-
     public function getSubscribedEvents()
     {
-        return [
-            'postPersist',
-            'postUpdate',
-            'postRemove',
-        ];
+        return self::$subscribedEvents;
     }
 
     /**
@@ -65,11 +65,18 @@ class ElasticSearchListener implements EventSubscriber
     /**
      * @param LifecycleEventArgs $args
      */
-    public function postRemove(LifecycleEventArgs $args)
+    public function preRemove(LifecycleEventArgs $args)
     {
         $this->sendEvent($args, 'remove');
     }
 
+    /**
+     * @param LifecycleEventArgs $args
+     */
+    public function postRemove(LifecycleEventArgs $args)
+    {
+        $this->sendEvent($args, 'remove');
+    }
 
     /**
      * @param LifecycleEventArgs $args
@@ -86,35 +93,52 @@ class ElasticSearchListener implements EventSubscriber
     public function sendEvent(LifecycleEventArgs $args, $action)
     {
         $entity = $args->getEntity();
-        $a      = explode("\\",get_class($entity));
-        $type   = end($a);
+        $array  = explode("\\",get_class($entity));
+        $type   = end($array);
 
-        if(in_array($type, $this->aTypes)){
-            if(array_key_exists('auto_event',$this->mapping[$type])){
-                $this->_catchEvent( $entity,
-                                    $this->mapping[$type]['transformer'],
-                                    $this->mapping[$type]['connection'],
-                                    $this->elasticSearchHandler->getIndexName($type),
-                                    $action);
-            }else{
-                $event = new ElasticSearchEvent($action, $entity);
-                $this->eventDispatcher->dispatch("headoo.elasticsearch.event", $event);
-            }
+        if (!in_array($type, $this->aTypes)) {
+            return;
         }
+
+        if (!array_key_exists('auto_event', $this->mapping[$type])) {
+            $event = new ElasticSearchEvent($action, $entity);
+            $this->eventDispatcher->dispatch("headoo.elasticsearch.event", $event);
+            return;
+        }
+
+        $this->_catchEvent(
+            $entity,
+            $this->mapping[$type]['transformer'],
+            $this->mapping[$type]['connection'],
+            $this->elasticSearchHandler->getIndexName($type),
+            $action
+        );
     }
 
     /**
      * @param $entity
      * @param $transformer
      * @param $connectionName
+     * @param $indexName
      * @param $action
      */
-    private function _catchEvent($entity,$transformer, $connectionName,$indexName, $action)
+    private function _catchEvent($entity, $transformer, $connectionName, $indexName, $action)
     {
-        if($action == 'persist' || $action == 'update'){
+        if (($action == 'persist' || $action == 'update') && !$this->isSoftDeleted($entity)) {
             $this->elasticSearchHandler->sendToElastic($entity, $transformer, $connectionName, $indexName);
-        }else{
-            $this->elasticSearchHandler->removeToElastic($entity, $connectionName,$indexName);
+            return;
         }
+
+        $this->elasticSearchHandler->removeFromElastic($entity, $connectionName, $indexName);
     }
+
+    /**
+     * @param $entity
+     * @return bool
+     */
+    private function isSoftDeleted($entity)
+    {
+        return (method_exists($entity, 'getDeletedAt') && $entity->getDeletedAt() != null);
+    }
+
 }

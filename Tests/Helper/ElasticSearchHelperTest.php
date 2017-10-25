@@ -9,7 +9,7 @@ class ElasticSearchHelperTest extends KernelTestCase
     /**
      * @var \Headoo\ElasticSearchBundle\Helper\ElasticSearchHelper
      */
-    private $_elasticSearchHelper;
+    private $elasticSearchHelper;
 
 
     /**
@@ -17,21 +17,22 @@ class ElasticSearchHelperTest extends KernelTestCase
      */
     public function setUp()
     {
+        parent::setUp();
         self::bootKernel();
-        $this->_elasticSearchHelper     = static::$kernel->getContainer()->get('headoo.elasticsearch.helper');
+        $this->elasticSearchHelper     = static::$kernel->getContainer()->get('headoo.elasticsearch.helper');
 
     }
 
     public function testClientConnection()
     {
-        $connection = $this->_elasticSearchHelper->getClient('localhost');
+        $connection = $this->elasticSearchHelper->getClient('localhost');
         //We test just agains elastic 5.X
         $this->assertEquals(5 , substr($connection->getVersion(),0,1));
     }
 
     public function testClusterConnection()
     {
-        $connections = $this->_elasticSearchHelper->getCluster(array(
+        $connections = $this->elasticSearchHelper->getCluster(array(
             'host' => 'localhost',
             'port' => 9200
         ));

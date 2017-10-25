@@ -18,17 +18,17 @@ class ElasticSearchHandlerTest extends KernelTestCase
     /**
      * @var \Headoo\ElasticSearchBundle\Handler\ElasticSearchHandler
      */
-    private $_elasticSearchHandler;
+    private $elasticSearchHandler;
 
     /**
      * @var \Headoo\ElasticSearchBundle\Helper\ElasticSearchHelper
      */
-    private $_elasticSearchHelper;
+    private $elasticSearchHelper;
 
     /**
      * @var EntityManager
      */
-    private $_em;
+    private $entityManager;
 
     /**
      * @var Application
@@ -41,11 +41,12 @@ class ElasticSearchHandlerTest extends KernelTestCase
      */
     public function setUp()
     {
+        parent::setUp();
         self::bootKernel();
 
-        $this->_em                      = static::$kernel->getContainer()->get('doctrine')->getManager();
-        $this->_elasticSearchHandler    = static::$kernel->getContainer()->get('headoo.elasticsearch.handler');
-        $this->_elasticSearchHelper     = static::$kernel->getContainer()->get('headoo.elasticsearch.helper');
+        $this->entityManager           = static::$kernel->getContainer()->get('doctrine')->getManager();
+        $this->elasticSearchHandler    = static::$kernel->getContainer()->get('headoo.elasticsearch.handler');
+        $this->elasticSearchHelper     = static::$kernel->getContainer()->get('headoo.elasticsearch.helper');
 
         $this->application = new Application(self::$kernel);
         $this->application->setAutoExit(false);
@@ -56,10 +57,10 @@ class ElasticSearchHandlerTest extends KernelTestCase
 
     public function testSendToElastic()
     {
-        $fake = $this->_em->getRepository('\Headoo\ElasticSearchBundle\Tests\Entity\FakeEntity')->find(1);
-        $this->_elasticSearchHandler->sendToElastic($fake, 'elastic.fakeentity.transformer', 'localhost', 'test');
+        $fake = $this->getFakeEntity();
+        $this->elasticSearchHandler->sendToElastic($fake, 'elastic.fakeentity.transformer', 'localhost', 'test');
 
-        $search     = new Search($this->_elasticSearchHelper->getClient('localhost'));
+        $search     = new Search($this->elasticSearchHelper->getClient('localhost'));
         $search->addIndex('test');
         $query      = new Query();
         $boolQuery  = new Query\BoolQuery();
@@ -71,16 +72,16 @@ class ElasticSearchHandlerTest extends KernelTestCase
 
         $query->setSize(1);
         $resultSet = $search->search($query);
-        $this->assertEquals('My test 1' , $resultSet->getResults()[0]->getSource()["name"]);
 
+        self::assertEquals('My test 1' , $resultSet->getResults()[0]->getSource()["name"]);
     }
 
-    public function testRemoveToElastic()
+    public function testRemoveFromElastic()
     {
-        $fake = $this->_em->getRepository('\Headoo\ElasticSearchBundle\Tests\Entity\FakeEntity')->find(1);
-        $this->_elasticSearchHandler->removeToElastic($fake, 'localhost', 'test');
+        $fake = $this->getFakeEntity();
+        $this->elasticSearchHandler->removeFromElastic($fake, 'localhost', 'test');
 
-        $search     = new Search($this->_elasticSearchHelper->getClient('localhost'));
+        $search     = new Search($this->elasticSearchHelper->getClient('localhost'));
         $search->addIndex('test');
         $query      = new Query();
         $boolQuery  = new Query\BoolQuery();
@@ -92,13 +93,16 @@ class ElasticSearchHandlerTest extends KernelTestCase
 
         $query->setSize(1);
         $resultSet = $search->search($query);
-        $this->assertEquals(0 , count($resultSet->getResults()));
 
+        self::assertEquals(0 , count($resultSet->getResults()));
     }
 
 
     public function loadFixtures(array $options = [])
     {
+        # Do not show output
+        self::setOutputCallback(function() {});
+
         $options['command'] = 'doctrine:database:create';
         $this->application->run(new ArrayInput($options));
 
@@ -108,9 +112,14 @@ class ElasticSearchHandlerTest extends KernelTestCase
         $loader = new Loader();
         $loader->addFixture(new LoadData());
 
-        $purger = new ORMPurger($this->_em);
-        $executor = new ORMExecutor($this->_em, $purger);
+        $purger = new ORMPurger($this->entityManager);
+        $executor = new ORMExecutor($this->entityManager, $purger);
         $executor->execute($loader->getFixtures());
+    }
+
+    private function getFakeEntity()
+    {
+        return $this->entityManager->getRepository('\Headoo\ElasticSearchBundle\Tests\Entity\FakeEntity')->find(1);
     }
 
 }

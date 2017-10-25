@@ -20,8 +20,7 @@ class Configuration implements ConfigurationInterface
         $treeBuilder = new TreeBuilder();
         $rootNode = $treeBuilder->root('headoo_elastic_search');
 
-        $rootNode
-            ->children()
+        $rootNode->children()
                 ->arrayNode('connections')
                 ->isRequired()
                 ->cannotBeEmpty()
@@ -47,8 +46,7 @@ class Configuration implements ConfigurationInterface
                             ->end()
                         ->end()
                     ->end()
-                ->end()
-        ;
+                ->end();
 
         return $treeBuilder;
     }

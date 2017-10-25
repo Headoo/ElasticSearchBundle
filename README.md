@@ -291,7 +291,7 @@ class ElasticSearchListener
 
 ## Command for populate
 ###### CAREFULL: You have to set --reset flag on command FIRST TIME you populate a type or all types.
-After configuration of your entities, you maybe want make them available on ElasticSearch. You have to use `php app/console headoo:elastic:populate`. Differents options are available :
+After configuration of your entities, you maybe want make them available on ElasticSearch. You have to use `php app/console headoo:elastic:populate` for Symfony 2 or `php bin/console headoo:elastic:populate` for Symfony 3. Differents options are available :
 
 * --limit=int : Limit of your collection
 * --offset=int : Offset of your collection 
@@ -300,10 +300,21 @@ After configuration of your entities, you maybe want make them available on Elas
 * --reset : For reset your indexes. BE CAREFULL, all your data will be lost in your Elastic Cluster
 * --batch=int : Length of collection per threads. Use this only with threads
 
+## Command for exodus
+This command check if each document in ElasticSearch, is still linked with an entity in Doctrine.
+If not, this command will remove the orphan document from ES. 
+###### Reminder: Doctrine and ES should always be iso (with option 'auto_event', without that option, it can be a small delay). 
+###### If this command find document not linked, ask you why!
 
+* --limit=int : Limit of your collection
+* --offset=int : Offset of your collection 
+* --type=string : Name of your Object (in our example it's YourEntityClassName)
+* --batch=int : Length of collection per threads. Use this only with threads
+* --dry-run : Just test. Do not Remove any document from ES
+* --verbose : Make more verbose the output
 
 ## Security
-If you discover a security vulnerability , please email instead of using the issue tracker. All security vulnerabilities will be promptly addressed.
+If you discover a security vulnerability, please email instead of using the issue tracker. All security vulnerabilities will be promptly addressed.
 
 ## Standalone Test
 
