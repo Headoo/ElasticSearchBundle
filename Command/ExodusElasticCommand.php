@@ -13,8 +13,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ExodusElasticCommand extends AbstractCommand
 {
     protected $nbrDocumentsFound = 0;
-    protected $counterDocumentTested = 0;
-    protected $counterEntitiesRemoved = 0;
+    protected $nbrDocumentTested = 0;
+    protected $nbrEntitiesRemoved = 0;
     protected $nbrDone = 0;
 
     /** @var int */
@@ -24,6 +24,8 @@ class ExodusElasticCommand extends AbstractCommand
     {
         $this->setName('headoo:elastic:exodus')
             ->setDescription('Remove not linked entities from Elastic Search')
+            ->addOption('limit',   'l', InputOption::VALUE_OPTIONAL, 'Limit For selected Type', 0)
+            ->addOption('offset',  'o', InputOption::VALUE_OPTIONAL, 'Offset For selected Type', 0)
             ->addOption('type',    't', InputOption::VALUE_OPTIONAL, 'Type of document you want to exodus. You must to have configure it before use', null)
             ->addOption('batch',   'b', InputOption::VALUE_OPTIONAL, 'Number of Documents per batch', null)
             ->addOption('dry-run', 'd', InputOption::VALUE_OPTIONAL, 'Dry run: do not make any change on ES', false);
@@ -84,7 +86,7 @@ class ExodusElasticCommand extends AbstractCommand
     private function removeFromElasticSearch($type, $repository, $resultSet)
     {
         foreach ($resultSet as $result) {
-            $this->counterDocumentTested++;
+            $this->nbrDocumentTested++;
             $documentId = $result->getDocument()->getId();
 
             # Look up into Doctrine the associated Entity with the given document
@@ -100,16 +102,24 @@ class ExodusElasticCommand extends AbstractCommand
             }
 
             # Remove document from ElasticSearch
-            $this->counterEntitiesRemoved++;
-            $response = $type->deleteById($documentId);
+            $this->nbrEntitiesRemoved++;
 
-            if ($response->hasError()&& $this->verbose) {
+            if ($this->dryRun) {
+                continue;
+            }
+
+            try {
+                $response = $type->deleteById($documentId);
+            } catch(\Elastica\Exception\NotFoundException $exception) {
+                # The document had to be deleted in the meantime
+            }
+
+            if (isset($response) && $response->hasError()&& $this->verbose) {
                 $this->output->writeln(self::CLEAR_LINE . "\tError: {$response->getError()}");
             }
 
-            gc_collect_cycles();
+            unset($response, $entity, $result);
         }
-
     }
 
     /**
@@ -142,35 +152,54 @@ class ExodusElasticCommand extends AbstractCommand
 
         $search = new Search($this->getClient($sType));
         $search->addIndex($index)->addType($sType);
-        $search->scroll('10m');
+        $search->scroll('1m');
+        $search->getQuery()
+            ->setSize($this->batch)
+            ->setSource(['_id']);
 
         $scroll = new Scroll($search);
+
+        $this->seekResult($scroll);
 
         foreach ($scroll as $scrollId => $resultSet) {
             $this->removeFromElasticSearch($index->getType($sType), $repository, $resultSet);
 
-            $this->nbrDone += $this->batch;
+            $this->nbrDone += $resultSet->count();
             $progressBar->setMessage("{$this->nbrDone}/{$countTotalDocuments}");
-            $progressBar->advance($resultSet->count());
-            unset($resultSet);
+            $progressBar->setProgress($this->nbrDone);
+
+            unset($scrollId, $resultSet);
+            gc_collect_cycles();
         }
 
         $progressBar->finish();
 
-        unset($progressBar);
-
-        $this->output->writeln(self::CLEAR_LINE . "{$sType}: Documents tested: {$this->counterDocumentTested} Entities removed: {$this->counterEntitiesRemoved}");
+        $this->output->writeln(self::CLEAR_LINE . "{$sType}: Documents tested: {$this->nbrDocumentTested} Entities removed: {$this->nbrEntitiesRemoved}");
         $this->output->writeln('<info>' . self::completeLine("Finish Exodus '{$sType}'") . '</info>');
-
-        gc_collect_cycles();
 
         return AbstractCommand::EXIT_SUCCESS;
     }
 
+    # Seek the resultSet with the correct offset
+    private function seekResult(Scroll $scroll)
+    {
+        if (empty($this->offset)) {
+            return;
+        }
+
+        $nbrOffsetted = 0;
+        foreach ($scroll as $scrollId => $resultSet) {
+            $nbrOffsetted += $resultSet->count();
+            if ($nbrOffsetted + $resultSet->count() >= $this->offset) {
+                return;
+            }
+        }
+    }
+
     private function initCounter()
     {
-        $this->counterEntitiesRemoved = 0;
-        $this->counterDocumentTested = 0;
+        $this->nbrEntitiesRemoved = 0;
+        $this->nbrDocumentTested = 0;
         $this->nbrDocumentsFound = 0;
         $this->nbrDone = 0;
     }
