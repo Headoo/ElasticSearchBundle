@@ -7,6 +7,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
+use Exception;
 
 class PopulateElasticCommand extends AbstractCommand
 {
@@ -101,7 +102,10 @@ class PopulateElasticCommand extends AbstractCommand
     private function _bulk($type, $aDocuments)
     {
         if(count($aDocuments)){
-            $type->addDocuments($aDocuments);
+            $responseSet = $type->addDocuments($aDocuments);
+            if (!$responseSet->isOK()) {
+                throw new Exception(sprintf('status=`%s`, error=`%s`, data = `%s`', $responseSet->getStatus(), $responseSet->getError(), json_encode($responseSet->getData())));
+            }
             $type->getIndex()->refresh();
         }
     }
