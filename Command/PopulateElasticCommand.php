@@ -246,7 +246,10 @@ class PopulateElasticCommand extends AbstractCommand
         $this->_bulk($objectType, $aDocuments);
         $this->output->writeln(self::completeLine("Start populate '{$type}'"));
 
+        $progressBar->setProgress($iResults);
+        $progressBar->display();
         $progressBar->finish();
+        
         $this->output->writeln('');
         $this->output->writeln("<info>" . self::completeLine("Finish populate {$type}") . "</info>");
     }

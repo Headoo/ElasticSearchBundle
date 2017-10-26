@@ -16,21 +16,23 @@ use Symfony\Component\Console\Input\ArrayInput;
 class PopulateElasticCommandTest extends KernelTestCase
 {
 
-    /**
-     * @var \Headoo\ElasticSearchBundle\Helper\ElasticSearchHelper
-     */
-    private $elasticSearchHelper;
+    /** @var \Headoo\ElasticSearchBundle\Helper\ElasticSearchHelper */
+    static private $elasticSearchHelper;
 
-    /**
-     * @var EntityManager
-     */
-    private $entityManager;
+    /** @var EntityManager */
+    static private $entityManager;
 
-    /**
-     * @var Application
-     */
+    /** @var Application */
     protected $application;
 
+    static function setUpBeforeClass()
+    {
+        parent::setUpBeforeClass();
+        self::bootKernel();
+
+        self::$entityManager = static::$kernel->getContainer()->get('doctrine')->getManager();
+        self::$elasticSearchHelper = static::$kernel->getContainer()->get('headoo.elasticsearch.helper');
+    }
 
     /**
      * {@inheritDoc}
@@ -38,10 +40,7 @@ class PopulateElasticCommandTest extends KernelTestCase
     public function setUp()
     {
         parent::setUp();
-        self::bootKernel();
-
-        $this->entityManager = static::$kernel->getContainer()->get('doctrine')->getManager();
-        $this->elasticSearchHelper = static::$kernel->getContainer()->get('headoo.elasticsearch.helper');
+        
         $this->application = new Application(self::$kernel);
         $this->application->setAutoExit(false);
 
@@ -57,7 +56,7 @@ class PopulateElasticCommandTest extends KernelTestCase
         ];
 
         $this->application->run(new ArrayInput($options1));
-        $search = new Search($this->elasticSearchHelper->getClient('localhost'));
+        $search = new Search(self::$elasticSearchHelper->getClient('localhost'));
         $search->addIndex('test');
         $query = new Query();
         $query->setSize(1000);
@@ -75,7 +74,7 @@ class PopulateElasticCommandTest extends KernelTestCase
         ];
 
         $this->application->run(new ArrayInput($options2));
-        $search = new Search($this->elasticSearchHelper->getClient('localhost'));
+        $search = new Search(self::$elasticSearchHelper->getClient('localhost'));
         $search->addIndex('test');
         $query = new Query();
         $query->setSize(1000);
@@ -92,7 +91,7 @@ class PopulateElasticCommandTest extends KernelTestCase
         ];
 
         $this->application->run(new ArrayInput($options3));
-        $search = new Search($this->elasticSearchHelper->getClient('localhost'));
+        $search = new Search(self::$elasticSearchHelper->getClient('localhost'));
         $search->addIndex('test');
         $query = new Query();
         $query->setSize(1000);
@@ -109,7 +108,7 @@ class PopulateElasticCommandTest extends KernelTestCase
         ];
 
         $this->application->run(new ArrayInput($options4));
-        $search     = new Search($this->elasticSearchHelper->getClient('localhost'));
+        $search     = new Search(self::$elasticSearchHelper->getClient('localhost'));
         $search->addIndex('test');
         $query      = new Query();
         $query->setSize(1000);
@@ -127,7 +126,7 @@ class PopulateElasticCommandTest extends KernelTestCase
         ];
 
         $this->application->run(new ArrayInput($optionsRunParallel));
-        $search     = new Search($this->elasticSearchHelper->getClient('localhost'));
+        $search     = new Search(self::$elasticSearchHelper->getClient('localhost'));
         $search->addIndex('test');
         $query      = new Query();
         $query->setSize(1000);
@@ -162,8 +161,8 @@ class PopulateElasticCommandTest extends KernelTestCase
         $loader = new Loader();
         $loader->addFixture(new LoadData());
 
-        $purger = new ORMPurger($this->entityManager);
-        $executor = new ORMExecutor($this->entityManager, $purger);
+        $purger = new ORMPurger(self::$entityManager);
+        $executor = new ORMExecutor(self::$entityManager, $purger);
         $executor->execute($loader->getFixtures());
     }
 
