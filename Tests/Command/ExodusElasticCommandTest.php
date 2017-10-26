@@ -14,7 +14,7 @@ use Symfony\Component\Console\Input\ArrayInput;
 class ExodusElasticCommandTest extends KernelTestCase
 {
     /** @var EntityManager */
-    static private $entityManager;
+    private $entityManager;
 
     /** @var Application */
     protected $application;
@@ -23,7 +23,6 @@ class ExodusElasticCommandTest extends KernelTestCase
     {
         parent::setUpBeforeClass();
         self::bootKernel();
-        self::$entityManager = static::$kernel->getContainer()->get('doctrine')->getManager();
     }
 
     /**
@@ -32,6 +31,7 @@ class ExodusElasticCommandTest extends KernelTestCase
     public function setUp()
     {
         parent::setUp();
+        $this->entityManager = static::$kernel->getContainer()->get('doctrine')->getManager();
         $this->application = new Application(self::$kernel);
         $this->application->setAutoExit(false);
 
@@ -82,8 +82,8 @@ class ExodusElasticCommandTest extends KernelTestCase
         $loader = new Loader();
         $loader->addFixture(new LoadData());
 
-        $purger = new ORMPurger(self::$entityManager);
-        $executor = new ORMExecutor(self::$entityManager, $purger);
+        $purger = new ORMPurger($this->entityManager);
+        $executor = new ORMExecutor($this->entityManager, $purger);
         $executor->execute($loader->getFixtures());
 
         # Populate ES
@@ -93,9 +93,9 @@ class ExodusElasticCommandTest extends KernelTestCase
         $this->application->run(new ArrayInput($options4));
 
         # Remove one entity in Doctrine
-        $entity = self::$entityManager->getRepository('\Headoo\ElasticSearchBundle\Tests\Entity\FakeEntity')->findOneBy([]);
-        self::$entityManager->remove($entity);
-        self::$entityManager->flush($entity);
+        $entity = $this->entityManager->getRepository('\Headoo\ElasticSearchBundle\Tests\Entity\FakeEntity')->findOneBy([]);
+        $this->entityManager->remove($entity);
+        $this->entityManager->flush($entity);
     }
 
 }
