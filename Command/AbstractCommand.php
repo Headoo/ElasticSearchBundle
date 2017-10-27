@@ -45,6 +45,8 @@ abstract class AbstractCommand  extends ContainerAwareCommand
     protected $verbose = false;
     /** @var bool $dryRun Do not make any change on ES */
     protected $dryRun = false;
+    /** @var bool $quiet */
+    protected $quiet = false;
     /** @var string */
     protected $environment;
     /** @var  string */
@@ -134,6 +136,10 @@ abstract class AbstractCommand  extends ContainerAwareCommand
         if ($input->hasOption('verbose')) {
             $this->verbose = $input->getOption('verbose');
         }
+
+        if ($input->hasOption('quiet')) {
+            $this->quiet = $input->getOption('quiet');
+        }
     }
 
     /**
@@ -208,8 +214,15 @@ abstract class AbstractCommand  extends ContainerAwareCommand
     protected function getClient($sType)
     {
         $connection = $this->mappings[$sType]['connection'];
+        $client = $this->elasticSearchHelper->getClient($connection);
 
-        return $this->elasticSearchHelper->getClient($connection);
+        try {
+            $this->elasticSearchHelper->isConnected($client);
+        } catch (\Elastica\Exception\Connection\HttpException $e) {
+            $this->output->writeln("<error>ElasticSearch connection error. Check your configuration and your connection</error>");
+            throw $e;
+        }
+
+        return $client;
     }
-
 }

@@ -29,5 +29,4 @@ class AbstractCommandTest extends KernelTestCase
             "Completed line should be equals to LINE_LENGTH: '$sMsg'"
         );
     }
-
 }

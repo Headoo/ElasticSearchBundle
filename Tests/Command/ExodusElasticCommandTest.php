@@ -19,18 +19,14 @@ class ExodusElasticCommandTest extends KernelTestCase
     /** @var Application */
     protected $application;
 
-    static public function setUpBeforeClass()
-    {
-        parent::setUpBeforeClass();
-        self::bootKernel();
-    }
-
     /**
      * {@inheritDoc}
+     * @outputBuffering disabled
      */
     public function setUp()
     {
         parent::setUp();
+        self::bootKernel();
         $this->entityManager = static::$kernel->getContainer()->get('doctrine')->getManager();
         $this->application = new Application(self::$kernel);
         $this->application->setAutoExit(false);
@@ -68,6 +64,10 @@ class ExodusElasticCommandTest extends KernelTestCase
         self::assertNotEquals(0, $returnValue, 'This command should failed: UNKNOWN TYPE');
     }
 
+    /**
+     * @outputBuffering disabled
+     * @param array $options
+     */
     public function loadFixtures(array $options = [])
     {
         # Do not show output

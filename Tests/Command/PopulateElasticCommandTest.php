@@ -25,9 +25,9 @@ class PopulateElasticCommandTest extends KernelTestCase
     /** @var Application */
     protected $application;
 
-
     /**
      * {@inheritDoc}
+     * @outputBuffering disabled
      */
     public function setUp()
     {
@@ -142,6 +142,10 @@ class PopulateElasticCommandTest extends KernelTestCase
         self::assertNotEquals(0, $returnValue, 'This command should failed: UNKNOWN TYPE');
     }
 
+    /**
+     * @outputBuffering disabled
+     * @param array $options
+     */
     public function loadFixtures(array $options = [])
     {
         # Do not show output

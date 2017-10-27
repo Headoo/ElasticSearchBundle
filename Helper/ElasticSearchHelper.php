@@ -35,7 +35,7 @@ class ElasticSearchHelper
      * @param array $servers
      * @return \Elastica\Client
      */
-    public function getCluster(array $servers)
+    static public function getCluster(array $servers)
     {
         $cluster = new Client([
             'servers' => [$servers]
@@ -44,4 +44,15 @@ class ElasticSearchHelper
         return $cluster;
     }
 
+    /**
+     * @param Client $elasticaClient
+     * @return bool
+     */
+    static public function isConnected(\Elastica\Client $elasticaClient)
+    {
+        $status = $elasticaClient->getStatus();
+        $status->refresh();
+
+        return true;
+    }
 }
