@@ -47,6 +47,12 @@ abstract class AbstractCommand  extends ContainerAwareCommand
     protected $dryRun = false;
     /** @var bool $quiet */
     protected $quiet = false;
+    /** @var int $id */
+    protected $id = null;
+    /** @var string $where */
+    protected $where = null;
+    /** @var string $join */
+    protected $join = null;
     /** @var string */
     protected $environment;
     /** @var  string */
@@ -55,6 +61,7 @@ abstract class AbstractCommand  extends ContainerAwareCommand
     /**
      * @param InputInterface $input
      * @param OutputInterface $output
+     * @throws \Doctrine\ORM\OptimisticLockException
      */
     protected function init(InputInterface $input, OutputInterface $output)
     {
@@ -139,6 +146,18 @@ abstract class AbstractCommand  extends ContainerAwareCommand
 
         if ($input->hasOption('quiet')) {
             $this->quiet = $input->getOption('quiet');
+        }
+
+        if ($input->hasOption('id')) {
+            $this->id = $input->getOption('id');
+        }
+
+        if ($input->hasOption('where')) {
+            $this->where = $input->getOption('where');
+        }
+
+        if ($input->hasOption('join')) {
+            $this->join = $input->getOption('join');
         }
     }
 

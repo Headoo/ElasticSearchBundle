@@ -2,6 +2,7 @@
 
 namespace Headoo\ElasticSearchBundle\Command;
 
+use Doctrine\ORM\Query;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -20,17 +21,38 @@ class PopulateElasticCommand extends AbstractCommand
             ->addOption('type',    null, InputOption::VALUE_OPTIONAL, 'Type of document you want to populate. You must to have configure it before use', null)
             ->addOption('threads', null, InputOption::VALUE_OPTIONAL, 'number of simultaneous threads', null)
             ->addOption('reset',   null, InputOption::VALUE_NONE,     'Reset the index')
-            ->addOption('batch',   null, InputOption::VALUE_OPTIONAL, 'Number of Document per batch', null);
+            ->addOption('batch',   null, InputOption::VALUE_OPTIONAL, 'Number of Document per batch', null)
+            ->addOption('id',      null, InputOption::VALUE_REQUIRED, 'Refresh a specific object with his Id', null)
+            ->addOption('where',   null, InputOption::VALUE_REQUIRED, 'Refresh objects with specific field ', null)
+            ->addOption('join',    null, InputOption::VALUE_REQUIRED, 'Join on another entity', null);
     }
 
     /**
      * @param InputInterface $input
      * @param OutputInterface $output
      * @return int
+     * @throws \Doctrine\ORM\OptimisticLockException
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->init($input, $output);
+
+        if ($input->getOption('where') && !$input->getOption('id')) {
+            $output->writeln("<error>The option 'where' must be used with option 'id'</error>");
+            return self::EXIT_FAILED;
+        }
+
+        if ($input->getOption('id')) {
+            if ($input->getOption('batch') || $input->getOption('reset') || $input->getOption('threads')) {
+                $output->writeln("<error>The option 'id' cannot be used with options 'batch', 'reset', or 'threads'</error>");
+                return self::EXIT_FAILED;
+            }
+
+            if (!$input->getOption('type')) {
+                $output->writeln("<error>The option 'id' have to be used with option 'type'</error>");
+                return self::EXIT_FAILED;
+            }
+        }
 
         // We add a limit per batch which equal of the batch option
         if($input->getOption('batch')){
@@ -207,8 +229,8 @@ class PopulateElasticCommand extends AbstractCommand
         $this->output->writeln(self::completeLine("Finish Type {$type} and Mapping"));
         $this->output->writeln(self::completeLine("Start populate {$type}"));
 
-        $iResults = $this->entityManager->createQuery("SELECT COUNT(u) FROM {$this->mappings[$type]['class']} u")->getResult()[0][1];
-        $query = $this->entityManager->createQuery("select u from {$this->mappings[$type]['class']} u");
+        // Select a specific object from his ID
+        $query = $this->_getQuery($type, $iResults);
 
         if($this->offset){
             $query->setFirstResult($this->offset);
@@ -278,5 +300,40 @@ class PopulateElasticCommand extends AbstractCommand
         }
 
         return true;
+    }
+
+    /**
+     * @param string $type
+     * @param int $iResults
+     * @return Query
+     */
+    private function _getQuery($type, &$iResults)
+    {
+        $id = filter_var($this->id, FILTER_SANITIZE_NUMBER_INT);
+        $where = filter_var($this->where, FILTER_SANITIZE_STRING);
+        $join = filter_var($this->join, FILTER_SANITIZE_STRING);
+        $entity = 'u';
+
+        # Forge clause JOIN
+        $clauseJoin = '';
+        if ($join) {
+            $clauseJoin = $join ? " LEFT JOIN u.{$join} v " : '';
+            $entity = 'v';
+        }
+
+        # Forge clause WHERE
+        $clauseWhere = '';
+        if ($id && $where) {
+            $clauseWhere = " WHERE {$entity}.{$where} = {$id}";
+        }
+        if ($id && !$where) {
+            $clauseWhere = " WHERE {$entity}.id = {$id}";
+        }
+
+        # COUNT results
+        $iResults = $this->entityManager->createQuery("SELECT COUNT(u) FROM {$this->mappings[$type]['class']} u $clauseJoin $clauseWhere")->getResult()[0][1];
+
+        # Return Query
+        return $this->entityManager->createQuery("SELECT u FROM {$this->mappings[$type]['class']} u $clauseJoin $clauseWhere");
     }
 }
