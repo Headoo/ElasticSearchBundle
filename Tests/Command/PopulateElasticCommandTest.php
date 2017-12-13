@@ -161,7 +161,7 @@ class PopulateElasticCommandTest extends KernelTestCase
     }
 
     /**
-     * @expectedException \Exception
+     * @expectedException \Doctrine\ORM\Query\QueryException
      */
     public function testCommandWrongJoin()
     {
