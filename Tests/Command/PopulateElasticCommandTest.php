@@ -165,6 +165,8 @@ class PopulateElasticCommandTest extends KernelTestCase
      */
     public function testCommandWrongJoin()
     {
+        $this->expectException(\Doctrine\ORM\Query\QueryException::class);
+
         $options1 = [
             'command'  => 'headoo:elastic:populate',
             '--join'   => 'UnknownType',
