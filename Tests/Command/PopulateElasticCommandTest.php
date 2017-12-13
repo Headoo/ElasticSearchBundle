@@ -115,7 +115,6 @@ class PopulateElasticCommandTest extends KernelTestCase
     {
         $options4 = [
             'command' => 'headoo:elastic:populate',
-            '--reset' => true,
             '--type'  => 'FakeEntity',
             '--where' => 'id',
             '--id'    => 23,
