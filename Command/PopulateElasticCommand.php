@@ -309,25 +309,31 @@ class PopulateElasticCommand extends AbstractCommand
      */
     private function _getQuery($type, &$iResults)
     {
-        $id = filter_var($this->id, FILTER_SANITIZE_NUMBER_INT);
+        $id = filter_var($this->id, FILTER_SANITIZE_STRING);
         $where = filter_var($this->where, FILTER_SANITIZE_STRING);
-        $join = filter_var($this->join, FILTER_SANITIZE_STRING);
+        $joins = filter_var($this->join, FILTER_SANITIZE_STRING);
         $entity = 'u';
 
         # Forge clause JOIN
         $clauseJoin = '';
-        if ($join) {
-            $clauseJoin = $join ? " LEFT JOIN u.{$join} v " : '';
-            $entity = 'v';
+        $aJoins = explode(',', $joins);
+        foreach ($aJoins as $join) {
+            if (empty($join)) {
+                break;
+            }
+            $newId = ($newId ?? 0) + 1;
+            $newEntity = "u_$newId";
+            $clauseJoin .= " LEFT JOIN {$entity}.{$join} {$newEntity} ";
+            $entity = $newEntity;
         }
 
         # Forge clause WHERE
         $clauseWhere = '';
         if ($id && $where) {
-            $clauseWhere = " WHERE {$entity}.{$where} = {$id}";
+            $clauseWhere = " WHERE {$entity}.{$where} = '{$id}'";
         }
         if ($id && !$where) {
-            $clauseWhere = " WHERE {$entity}.id = {$id}";
+            $clauseWhere = " WHERE {$entity}.id = '{$id}'";
         }
 
         # COUNT results
