@@ -2,6 +2,7 @@
 
 namespace Headoo\ElasticSearchBundle\Command;
 
+use Doctrine\ORM\Query;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -19,18 +20,39 @@ class PopulateElasticCommand extends AbstractCommand
             ->addOption('offset',  null, InputOption::VALUE_OPTIONAL, 'Offset For selected Type', 0)
             ->addOption('type',    null, InputOption::VALUE_OPTIONAL, 'Type of document you want to populate. You must to have configure it before use', null)
             ->addOption('threads', null, InputOption::VALUE_OPTIONAL, 'number of simultaneous threads', null)
-            ->addOption('reset',   null)
-            ->addOption('batch',   null, InputOption::VALUE_OPTIONAL, 'Number of Document per batch', null);
+            ->addOption('reset',   null, InputOption::VALUE_NONE,     'Reset the index')
+            ->addOption('batch',   null, InputOption::VALUE_OPTIONAL, 'Number of Document per batch', null)
+            ->addOption('id',      null, InputOption::VALUE_REQUIRED, 'Refresh a specific object with his Id', null)
+            ->addOption('where',   null, InputOption::VALUE_REQUIRED, 'Refresh objects with specific field ', null)
+            ->addOption('join',    null, InputOption::VALUE_REQUIRED, 'Join on another entity', null);
     }
 
     /**
      * @param InputInterface $input
      * @param OutputInterface $output
      * @return int
+     * @throws \Doctrine\ORM\OptimisticLockException
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->init($input, $output);
+
+        if ($input->getOption('where') && !$input->getOption('id')) {
+            $output->writeln("<error>The option 'where' must be used with option 'id'</error>");
+            return self::EXIT_FAILED;
+        }
+
+        if ($input->getOption('id')) {
+            if ($input->getOption('batch') || $input->getOption('reset') || $input->getOption('threads')) {
+                $output->writeln("<error>The option 'id' cannot be used with options 'batch', 'reset', or 'threads'</error>");
+                return self::EXIT_FAILED;
+            }
+
+            if (!$input->getOption('type')) {
+                $output->writeln("<error>The option 'id' have to be used with option 'type'</error>");
+                return self::EXIT_FAILED;
+            }
+        }
 
         // We add a limit per batch which equal of the batch option
         if($input->getOption('batch')){
@@ -145,9 +167,10 @@ class PopulateElasticCommand extends AbstractCommand
 
                     unset($currentProcesses[$index]);
 
-                    $progression += $this->limit;
+                    $processDone = intval($process->getOutput());
+                    $progression += $processDone;
                     $progressBar->setMessage("$progression/$progressMax");
-                    $progressBar->advance($this->limit);
+                    $progressBar->advance($processDone);
 
                     // directly add and start new process after the previous finished
                     if (count($processesQueue) > 0) {
@@ -162,9 +185,9 @@ class PopulateElasticCommand extends AbstractCommand
             // continue loop while there are processes being executed or waiting for execution
         } while (count($processesQueue) > 0 || count($currentProcesses) > 0);
 
-        $progressBar->setMessage("$numberOfEntities/$progressMax");
-        $progressBar->setProgress($numberOfEntities);
         $progressBar->finish();
+        $progressBar->display();
+        $this->output->writeln('');
 
         return $returnValue;
     }
@@ -185,7 +208,7 @@ class PopulateElasticCommand extends AbstractCommand
 
         for ($i = 0; $i <= $numberOfProcess; $i++) {
             $_offset = $this->offset + ($this->limit * $i);
-            $process = new Process("php $this->consoleDir headoo:elastic:populate --type={$type} --limit={$this->limit} --offset={$_offset} " . $sOptions);
+            $process = new Process("php $this->consoleDir headoo:elastic:populate --type={$type} --limit={$this->limit} --offset={$_offset} --quiet " . $sOptions);
             $aProcess[] = $process;
         }
 
@@ -206,8 +229,8 @@ class PopulateElasticCommand extends AbstractCommand
         $this->output->writeln(self::completeLine("Finish Type {$type} and Mapping"));
         $this->output->writeln(self::completeLine("Start populate {$type}"));
 
-        $iResults = $this->entityManager->createQuery("SELECT COUNT(u) FROM {$this->mappings[$type]['class']} u")->getResult()[0][1];
-        $query = $this->entityManager->createQuery("select u from {$this->mappings[$type]['class']} u");
+        // Select a specific object from his ID
+        $query = $this->_getQuery($type, $iResults);
 
         if($this->offset){
             $query->setFirstResult($this->offset);
@@ -222,7 +245,7 @@ class PopulateElasticCommand extends AbstractCommand
         $iterableResult = $query->iterate();
 
         $progressBar = $this->getProgressBar($this->output, $iResults);
-        $progression = $this->offset;
+        $progression = 0;
         $progressMax = $iResults + $this->offset;
 
         $aDocuments = [];
@@ -237,18 +260,24 @@ class PopulateElasticCommand extends AbstractCommand
             $aDocuments[]= $document;
             $this->entityManager->detach($row[0]);
 
-            $progressBar->setMessage(($progression++) . "/{$progressMax}");
+            $progressBar->setMessage((++$progression + $this->offset) . "/{$progressMax}");
             $progressBar->advance();
 
             gc_collect_cycles();
         }
 
         $this->_bulk($objectType, $aDocuments);
-        $this->output->writeln(self::completeLine("Start populate '{$type}'"));
 
+        $progressBar->setProgress($iResults);
+        $progressBar->display();
         $progressBar->finish();
+        
         $this->output->writeln('');
         $this->output->writeln("<info>" . self::completeLine("Finish populate {$type}") . "</info>");
+        # In quite mode: just write in output the number of documents treated
+        if ($this->quiet) {
+            $this->output->writeln("$progression", OutputInterface::VERBOSITY_QUIET);
+        }
     }
 
     /**
@@ -273,4 +302,44 @@ class PopulateElasticCommand extends AbstractCommand
         return true;
     }
 
+    /**
+     * @param string $type
+     * @param int $iResults
+     * @return Query
+     */
+    private function _getQuery($type, &$iResults)
+    {
+        $id = filter_var($this->id, FILTER_SANITIZE_STRING);
+        $where = filter_var($this->where, FILTER_SANITIZE_STRING);
+        $joins = filter_var($this->join, FILTER_SANITIZE_STRING);
+        $entity = 'u';
+
+        # Forge clause JOIN
+        $clauseJoin = '';
+        $aJoins = explode(',', $joins);
+        foreach ($aJoins as $join) {
+            if (empty($join)) {
+                break;
+            }
+            $newId = ($newId ?? 0) + 1;
+            $newEntity = "u_$newId";
+            $clauseJoin .= " LEFT JOIN {$entity}.{$join} {$newEntity} ";
+            $entity = $newEntity;
+        }
+
+        # Forge clause WHERE
+        $clauseWhere = '';
+        if ($id && $where) {
+            $clauseWhere = " WHERE {$entity}.{$where} = '{$id}'";
+        }
+        if ($id && !$where) {
+            $clauseWhere = " WHERE {$entity}.id = '{$id}'";
+        }
+
+        # COUNT results
+        $iResults = $this->entityManager->createQuery("SELECT COUNT(u) FROM {$this->mappings[$type]['class']} u $clauseJoin $clauseWhere")->getResult()[0][1];
+
+        # Return Query
+        return $this->entityManager->createQuery("SELECT u FROM {$this->mappings[$type]['class']} u $clauseJoin $clauseWhere");
+    }
 }

@@ -16,24 +16,18 @@ use Symfony\Component\Console\Input\ArrayInput;
 class PopulateElasticCommandTest extends KernelTestCase
 {
 
-    /**
-     * @var \Headoo\ElasticSearchBundle\Helper\ElasticSearchHelper
-     */
+    /** @var \Headoo\ElasticSearchBundle\Helper\ElasticSearchHelper */
     private $elasticSearchHelper;
 
-    /**
-     * @var EntityManager
-     */
+    /** @var EntityManager */
     private $entityManager;
 
-    /**
-     * @var Application
-     */
+    /** @var Application */
     protected $application;
-
 
     /**
      * {@inheritDoc}
+     * @outputBuffering disabled
      */
     public function setUp()
     {
@@ -53,7 +47,8 @@ class PopulateElasticCommandTest extends KernelTestCase
         $options1 = [
             'command' => 'headoo:elastic:populate',
             '--reset' => true,
-            '--env'   => 'prod'
+            '--env'   => 'prod',
+            '--quiet' => true,
         ];
 
         $this->application->run(new ArrayInput($options1));
@@ -64,7 +59,6 @@ class PopulateElasticCommandTest extends KernelTestCase
         $resultSet = $search->search($query);
         $this->assertEquals(100, count($resultSet->getResults()));
     }
-
 
     public function testCommand2()
     {
@@ -117,6 +111,19 @@ class PopulateElasticCommandTest extends KernelTestCase
         $this->assertEquals(100 , count($resultSet->getResults()));
     }
 
+    public function testCommandWhereId()
+    {
+        $options4 = [
+            'command' => 'headoo:elastic:populate',
+            '--type'  => 'FakeEntity',
+            '--where' => 'id',
+            '--id'    => 23,
+        ];
+
+        $this->application->run(new ArrayInput($options4));
+        $this->assertEmpty(null);
+    }
+
     public function testCommandRunParallel()
     {
         $optionsRunParallel = [
@@ -148,6 +155,11 @@ class PopulateElasticCommandTest extends KernelTestCase
         self::assertNotEquals(0, $returnValue, 'This command should failed: UNKNOWN TYPE');
     }
 
+    /**
+     * @outputBuffering disabled
+     * @param array $options
+     * @throws \Exception
+     */
     public function loadFixtures(array $options = [])
     {
         # Do not show output
@@ -166,5 +178,4 @@ class PopulateElasticCommandTest extends KernelTestCase
         $executor = new ORMExecutor($this->entityManager, $purger);
         $executor->execute($loader->getFixtures());
     }
-
 }

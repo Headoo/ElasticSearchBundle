@@ -100,7 +100,7 @@ class ElasticSearchListener implements EventSubscriber
             return;
         }
 
-        if (!array_key_exists('auto_event', $this->mapping[$type])) {
+        if (!array_key_exists('auto_event', $this->mapping[$type]) || !$this->mapping[$type]['auto_event']) {
             $event = new ElasticSearchEvent($action, $entity);
             $this->eventDispatcher->dispatch("headoo.elasticsearch.event", $event);
             return;

@@ -13,27 +13,21 @@ use Symfony\Component\Console\Input\ArrayInput;
 
 class ExodusElasticCommandTest extends KernelTestCase
 {
-
-    /** @var \Headoo\ElasticSearchBundle\Helper\ElasticSearchHelper */
-    private $elasticSearchHelper;
-
     /** @var EntityManager */
     private $entityManager;
 
     /** @var Application */
     protected $application;
 
-
     /**
      * {@inheritDoc}
+     * @outputBuffering disabled
      */
     public function setUp()
     {
         parent::setUp();
         self::bootKernel();
-
         $this->entityManager = static::$kernel->getContainer()->get('doctrine')->getManager();
-        $this->elasticSearchHelper = static::$kernel->getContainer()->get('headoo.elasticsearch.helper');
         $this->application = new Application(self::$kernel);
         $this->application->setAutoExit(false);
 
@@ -45,7 +39,7 @@ class ExodusElasticCommandTest extends KernelTestCase
         $options1 = [
             'command'  => 'headoo:elastic:exodus',
             '--batch'  => 10,
-            '--dry-run' => true,
+            '--dry-run' => false,
             '--verbose' => true,
             '--env'     => 'prod',
         ];
@@ -70,6 +64,10 @@ class ExodusElasticCommandTest extends KernelTestCase
         self::assertNotEquals(0, $returnValue, 'This command should failed: UNKNOWN TYPE');
     }
 
+    /**
+     * @outputBuffering disabled
+     * @param array $options
+     */
     public function loadFixtures(array $options = [])
     {
         # Do not show output
