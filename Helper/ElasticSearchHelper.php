@@ -25,7 +25,9 @@ class ElasticSearchHelper
     {
         $elasticaClient = new Client([
             'host' => $this->elasticaConfig[$connectionName]['host'],
-            'port' => $this->elasticaConfig[$connectionName]['port']
+            'port' => $this->elasticaConfig[$connectionName]['port'],
+            'timeout' => $this->elasticaConfig[$connectionName]['timeout'],
+            'connectTimeout' => $this->elasticaConfig[$connectionName]['connectTimeout']
         ]);
 
         return $elasticaClient;

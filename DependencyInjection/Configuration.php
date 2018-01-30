@@ -28,6 +28,8 @@ class Configuration implements ConfigurationInterface
                         ->children()
                             ->scalarNode('host')->end()
                             ->scalarNode('port')->end()
+                            ->scalarNode('timeout')->end()
+                            ->scalarNode('connectTimeout')->end()
                             ->end()
                         ->end()
                     ->end()
