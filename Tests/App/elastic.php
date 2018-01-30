@@ -9,6 +9,8 @@ $connections = [
     'localhost' => [
         'host' => 'localhost',
         'port' => '9200',
+        'timeout' => '10',
+        'connectTimeout' => '10'
     ]
 ];
 
