@@ -97,7 +97,7 @@ abstract class AbstractCommand  extends ContainerAwareCommand
         $sOptions = '';
 
         foreach ($aOptions as $key => $value) {
-            if ($value === false || in_array($key, $excludedOption)) {
+            if ($value === false || empty($value) || in_array($key, $excludedOption)) {
                 continue;
             }
 
