@@ -37,14 +37,14 @@ class PopulateElasticCommand extends AbstractCommand
     {
         $this->init($input, $output);
 
-        if ($input->getOption('where') && !$input->getOption('id')) {
-            $output->writeln("<error>The option 'where' must be used with option 'id'</error>");
+        if ($input->getOption('where') && $input->getOption('id')) {
+            $output->writeln("<error>The option 'where' cannot be used with option 'id'</error>");
             return self::EXIT_FAILED;
         }
 
         if ($input->getOption('id')) {
-            if ($input->getOption('batch') || $input->getOption('reset') || $input->getOption('threads')) {
-                $output->writeln("<error>The option 'id' cannot be used with options 'batch', 'reset', or 'threads'</error>");
+            if ($input->getOption('reset')) { // $input->getOption('batch') ||  || $input->getOption('threads')
+                $output->writeln("<error>The option 'id' cannot be used with option 'reset'</error>");
                 return self::EXIT_FAILED;
             }
 
@@ -81,9 +81,9 @@ class PopulateElasticCommand extends AbstractCommand
      */
     private function _switchType($type, $batch)
     {
-        if(in_array($type, $this->aTypes)){
+        if (in_array($type, $this->aTypes)) {
             $this->output->writeln(self::completeLine("BEGIN {$type}"));
-            if($this->reset){
+            if ($this->reset) {
                 $this->_resetType($type);
             }
 
@@ -250,8 +250,14 @@ class PopulateElasticCommand extends AbstractCommand
 
         $aDocuments = [];
 
-        foreach ($iterableResult as $row){
-            $document = $transformer->transform($row[0]);
+        foreach ($iterableResult as $row) {
+            try {
+                $document = $transformer->transform($row[0]);
+            } catch (\Doctrine\ORM\EntityNotFoundException $e) {
+                # An object has not been found
+                $this->output->writeln(get_class($row[0]) . "({$row[0]->getId()}): {$e->getMessage()}");
+                $document = null;
+            }
 
             if (!$document) {
                 continue;
@@ -268,7 +274,12 @@ class PopulateElasticCommand extends AbstractCommand
 
         $this->_bulk($objectType, $aDocuments);
 
-        $progressBar->setProgress($iResults);
+        try {
+            $progressBar->setProgress($iResults);
+        } catch (\Symfony\Component\Console\Exception\LogicException $e) {
+            # You can't regress the progress bar.
+        }
+
         $progressBar->display();
         $progressBar->finish();
         
@@ -337,7 +348,11 @@ class PopulateElasticCommand extends AbstractCommand
         }
 
         # COUNT results
-        $iResults = $this->entityManager->createQuery("SELECT COUNT(u) FROM {$this->mappings[$type]['class']} u $clauseJoin $clauseWhere")->getResult()[0][1];
+        try {
+            $iResults = $this->entityManager->createQuery("SELECT COUNT(u) FROM {$this->mappings[$type]['class']} u $clauseJoin $clauseWhere")->getResult()[0][1];
+        } catch (\Doctrine\ORM\Query\QueryException $e) {
+            $iResults = 0;
+        }
 
         # Return Query
         return $this->entityManager->createQuery("SELECT u FROM {$this->mappings[$type]['class']} u $clauseJoin $clauseWhere");
