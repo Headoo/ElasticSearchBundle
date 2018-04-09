@@ -125,6 +125,7 @@ class PopulateElasticCommand extends AbstractCommand
         if(count($aDocuments)){
             $type->addDocuments($aDocuments);
             $type->getIndex()->refresh();
+            unset($aDocuments);
         }
     }
 
@@ -264,6 +265,7 @@ class PopulateElasticCommand extends AbstractCommand
             }
 
             $aDocuments[]= $document;
+            unset($document);
             $this->entityManager->detach($row[0]);
 
             $progressBar->setMessage((++$progression + $this->offset) . "/{$progressMax}");
