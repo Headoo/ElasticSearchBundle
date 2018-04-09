@@ -37,7 +37,7 @@ class PopulateElasticCommand extends AbstractCommand
     {
         $this->init($input, $output);
 
-        if ($input->getOption('where') && $input->getOption('id')) {
+        if ($input->getOption('where') && ! $input->getOption('id')) {
             $output->writeln("<error>The option 'where' cannot be used with option 'id'</error>");
             return self::EXIT_FAILED;
         }
@@ -125,6 +125,7 @@ class PopulateElasticCommand extends AbstractCommand
         if(count($aDocuments)){
             $type->addDocuments($aDocuments);
             $type->getIndex()->refresh();
+            unset($aDocuments);
         }
     }
 
@@ -264,6 +265,7 @@ class PopulateElasticCommand extends AbstractCommand
             }
 
             $aDocuments[]= $document;
+            unset($document);
             $this->entityManager->detach($row[0]);
 
             $progressBar->setMessage((++$progression + $this->offset) . "/{$progressMax}");
