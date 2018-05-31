@@ -249,8 +249,6 @@ class PopulateElasticCommand extends AbstractCommand
         $progression = 0;
         $progressMax = $iResults + $this->offset;
 
-        $aDocuments = [];
-
         foreach ($iterableResult as $row) {
             try {
                 $document = $transformer->transform($row[0]);
@@ -264,9 +262,8 @@ class PopulateElasticCommand extends AbstractCommand
                 continue;
             }
 
-            $aDocuments[]= $document;
-            unset($document);
-            $this->entityManager->detach($row[0]);
+            $objectType->addDocument($document);
+            $this->entityManager->clear();
 
             $progressBar->setMessage((++$progression + $this->offset) . "/{$progressMax}");
             $progressBar->advance();
@@ -274,7 +271,7 @@ class PopulateElasticCommand extends AbstractCommand
             gc_collect_cycles();
         }
 
-        $this->_bulk($objectType, $aDocuments);
+        $objectType->getIndex()->refresh();
 
         try {
             $progressBar->setProgress($iResults);
@@ -284,7 +281,7 @@ class PopulateElasticCommand extends AbstractCommand
 
         $progressBar->display();
         $progressBar->finish();
-        
+
         $this->output->writeln('');
         $this->output->writeln("<info>" . self::completeLine("Finish populate {$type}") . "</info>");
         # In quite mode: just write in output the number of documents treated
