@@ -249,8 +249,6 @@ class PopulateElasticCommand extends AbstractCommand
         $progression = 0;
         $progressMax = $iResults + $this->offset;
 
-        $aDocuments = [];
-
         foreach ($iterableResult as $row) {
             try {
                 $document = $transformer->transform($row[0]);
