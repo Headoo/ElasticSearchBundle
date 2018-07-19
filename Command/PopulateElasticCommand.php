@@ -38,7 +38,7 @@ class PopulateElasticCommand extends AbstractCommand
         $this->init($input, $output);
 
         if ($input->getOption('where') && ! $input->getOption('id')) {
-            $output->writeln("<error>You must provide an 'id' with the 'where' optio</error>");
+            $output->writeln("<error>You must provide an 'id' with the 'where' option</error>");
             return self::EXIT_FAILED;
         }
 
