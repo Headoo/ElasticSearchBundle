@@ -1,4 +1,5 @@
 services:
+  _defaults: { public: true }
 
   headoo.elasticsearch.helper:
             class: Headoo\ElasticSearchBundle\Helper\ElasticSearchHelper

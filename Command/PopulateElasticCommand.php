@@ -8,6 +8,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
+use Symfony\Component\Console\Input\InputDefinition;
 
 class PopulateElasticCommand extends AbstractCommand
 {
@@ -16,15 +17,19 @@ class PopulateElasticCommand extends AbstractCommand
     {
         $this->setName('headoo:elastic:populate')
             ->setDescription('Repopulate Elastic Search')
-            ->addOption('limit',   null, InputOption::VALUE_OPTIONAL, 'Limit For selected Type', 0)
-            ->addOption('offset',  null, InputOption::VALUE_OPTIONAL, 'Offset For selected Type', 0)
-            ->addOption('type',    null, InputOption::VALUE_OPTIONAL, 'Type of document you want to populate. You must to have configure it before use', null)
-            ->addOption('threads', null, InputOption::VALUE_OPTIONAL, 'number of simultaneous threads', null)
-            ->addOption('reset',   null, InputOption::VALUE_NONE,     'Reset the index')
-            ->addOption('batch',   null, InputOption::VALUE_OPTIONAL, 'Number of Document per batch', null)
-            ->addOption('id',      null, InputOption::VALUE_REQUIRED, 'Refresh a specific object with his Id', null)
-            ->addOption('where',   null, InputOption::VALUE_REQUIRED, 'Refresh objects with specific field ', null)
-            ->addOption('join',    null, InputOption::VALUE_REQUIRED, 'Join on another entity', null);
+            ->setDefinition(
+                new InputDefinition([
+                    new InputOption('limit',   null, InputOption::VALUE_OPTIONAL, 'Limit For selected Type', 0),
+                    new InputOption('offset',  null, InputOption::VALUE_OPTIONAL, 'Offset For selected Type', 0),
+                    new InputOption('type',    null, InputOption::VALUE_OPTIONAL, 'Type of document you want to populate. You must to have configure it before use', null),
+                    new InputOption('threads', null, InputOption::VALUE_OPTIONAL, 'number of simultaneous threads', null),
+                    new InputOption('reset',   null, InputOption::VALUE_NONE,     'Reset the index'),
+                    new InputOption('batch',   null, InputOption::VALUE_OPTIONAL, 'Number of Document per batch', null),
+                    new InputOption('id',      null, InputOption::VALUE_REQUIRED, 'Refresh a specific object with his Id', null),
+                    new InputOption('where',   null, InputOption::VALUE_REQUIRED, 'Refresh objects with specific field ', null),
+                    new InputOption('join',    null, InputOption::VALUE_REQUIRED, 'Join on another entity', null)
+                ])
+            );
     }
 
     /**
